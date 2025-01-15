@@ -2,7 +2,7 @@
 一個實用的OJ，適合基礎程式設計課程繳交作業與上機考試
 
 <h2>系統如何建立?</h2>
-系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等  
+系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等    
 
 每個模組皆安裝運行在Docker容器(container)內  
 
