@@ -4,7 +4,7 @@
 <h2>系統如何建立?</h2>
 系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等
 
-每個模組皆安裝運行在Docker容器(container)內
+每個模組皆安裝運行在Docker容器(container)內  
 
 建議使用作業系統是Ubuntu20.02，Ubuntu系統安裝運行於Oracle VirtualBox虛擬機內。
 
@@ -19,8 +19,10 @@ docker compose up -d
 在瀏覽器輸入: localhost或是你的IP  
 
 點選"登入"  
+
 帳號 admin  
-預設密碼: adminoj  
+預設密碼: adminoj 
+
 注意: 登入後請立即修改管理者密碼
 
 # 觀看OJ logs內容
@@ -45,7 +47,7 @@ oj-db/postgres
 docker compose -f docker-compose-dev.yml up -d
 
 程式碼位置在letsoj目錄下:  
-oj-web
+oj-web/
 
 程式碼若有修改，gunicorn會自動重新啟動Django server，方便更新程式碼。
 
