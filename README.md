@@ -12,6 +12,8 @@
 
 若是使用Windows系統的Docker進行安裝也可以，但是OJ無法進行考試IP管制，其餘功能皆可正常運作。
 
+備註:  Judge0若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結1](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)與[連結2](https://github.com/judge0/judge0/issues/325))
+ 
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
