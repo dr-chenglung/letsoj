@@ -17,8 +17,30 @@ docker compose up -d
 預設密碼: adminoj  
 注意: 登入後請立即修改管理者密碼
 
-
 # 觀看OJ logs內容
 docker compose logs -f
+
+# 資料庫位置
+在letsoj目錄下:  
+oj-db/postgres
+
+請定期經常備份資料庫，Ubuntu環境下，可以修改/etc/crontab檔案，進行定期備份到雲端硬碟。
+
+# 使用舊資料庫啟動OJ
+
+請將你的舊資料庫放在letsoj目錄下:  
+oj-db/postgres
+
+重新啟動容器即可順利使用舊有或移轉的資料庫
+
+# 開發者程式碼
+
+你可以啟動開發者模式，進行OJ系統程式開發  
+docker compose -f docker-compose-dev.yml up -d
+
+程式碼位置在letsoj目錄下:  
+oj-web
+
+程式碼若有修改，gunicorn會自動重新啟動Django server，方便更新程式碼。
 
 # 管理者操作手冊
