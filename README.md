@@ -1,7 +1,7 @@
 # letsoj
 一個實用的OJ，適合基礎程式設計課程繳交作業與上機考試
 
-![image](https://github.com/dr-chenglung/letsoj/blob/main/extra-data/contest-list.png)
+![image](https://github.com/dr-chenglung/letsoj/blob/main/documents/contest-list.png)
 
 # 系統建立
 系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等。      
@@ -12,10 +12,13 @@
 
 若是使用Windows系統的Docker進行安裝也可以，但是OJ無法進行考試IP管制，其餘功能皆可正常運作。
 
-# Judge0
-Robust, scalable, and open-source online code execution system.  
+# Judge0: 判題系統
 
-此OJ採用[Judge0 Extra CE](https://github.com/judge0/judge0/tree/extra) 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)
+[Judge0](https://github.com/judge0/judge0)是一個開源的線上判題系統，包含有Judge0 CE與Judge0 Extra CE兩種版本，兩種版本提供的程式語言不同。
+
+[Judge0 Extra CE](https://github.com/judge0/judge0/tree/extra)提供的程式語言種類較少，包含Java, C, C++, C#, Python for ML等常見的初學者會學習的程式語言。
+
+此OJ採用Judge0 Extra CE 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)
 
 備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
  
