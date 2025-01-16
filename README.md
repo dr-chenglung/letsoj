@@ -4,9 +4,10 @@
 ![image](https://github.com/dr-chenglung/letsoj/blob/main/extra-data/contest-list.png)
 
 <h2>系統如何建立?</h2>
-系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等    
+系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等      
 
-每個模組皆安裝運行在Docker容器(container)內  
+
+每個模組皆安裝運行在Docker容器(container)內。  
 
 建議使用作業系統是Ubuntu20.02，Ubuntu系統安裝運行於Oracle VirtualBox虛擬機內。
 
@@ -58,3 +59,4 @@ oj-web/
 目前程式碼仍是雛型階段，功能也未盡完善，但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。
 
 # 管理者操作手冊
+已置放在extra-data卷夾中
