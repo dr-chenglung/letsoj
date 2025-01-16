@@ -18,7 +18,7 @@
 
 [Judge0 Extra CE](https://github.com/judge0/judge0/tree/extra)提供的程式語言種類較少，包含Java, C, C++, C#, Python for ML等常見的初學者會學習的程式語言。
 
-此OJ採用Judge0 Extra CE 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)
+此OJ採用Judge0 Extra CE 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)。若需要其他未包含的程式語言判題，則必須修改程式改成使用Judge0 CE。
 
 備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
  
@@ -69,7 +69,7 @@ oj-web/
 
 程式碼若有修改，gunicorn會自動重新啟動Django server，方便更新程式碼。
 
-目前程式碼仍是雛型階段，功能也未盡完善，但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
+目前程式碼仍是雛型階段，功能未盡完善，或許存在潛在的Bugs。但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
 
 # 管理者操作手冊
 已置放在documents卷夾中，可下載參考。
