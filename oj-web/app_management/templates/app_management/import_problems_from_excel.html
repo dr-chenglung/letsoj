@@ -1,0 +1,20 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  匯入題目
+{% endblock page_title %}
+{% block page_content %}
+  <h3>匯入題目(匯入格式請參考匯出題目的格式，但不要有id欄位，題目會被新增到資料庫。)</h3>
+  <div class="col-6 mt-2">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="excel_file" class="form-control">
+      <div class="row mt-2">
+        <div class="col-sm-12">
+          <button type="submit" class="btn btn-sm btn-primary">確定匯入</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock page_content %}
+{% block script_block %}
+{% endblock script_block %}

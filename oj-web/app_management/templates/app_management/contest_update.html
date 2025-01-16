@@ -1,0 +1,82 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  修改競賽
+{% endblock page_title %}
+{% block page_content %}
+    <h3>修改競賽</h3>
+    <form method="post" action="{% url 'contest_update' contest.pk %}">
+      {% csrf_token %}
+      <!-- Hidden inputs for prblm_page_num and selected_categories parameters -->
+      <input type="hidden" name="is_visible_contest" value="{{ request.session.is_visible_contest }}">
+      <input type="hidden" name="contest_status" value="{{ request.session.contest_status }}">
+      <input type="hidden" name="page" value="{{ request.session.page }}">
+      <div class="row mb-2">
+        <div class="row mb-2">
+          <!-- Label and Input for '競賽名稱' -->
+          <div class="col-lg-6 col-md-12 mb-2">
+              <label class="col-form-label">競賽名稱</label>
+              <input type="text" class="form-control" name="title" value="{{ contest.title }}">
+          </div>
+      
+          <!-- Label and Input for '順序編號' -->
+          <div class="col-lg-6 col-md-12">
+              <label class="col-form-label">順序編號(學年-學期-週次-序號-)(例如113-1-w01-10-會由大至小顯示)</label>
+              <input type="text" class="form-control" name="display_seq" value="{{ contest.display_seq }}">
+          </div>
+      </div>
+      
+      <div class="row mb-2">
+        <label class="col-1 col-form-label">描述</label>
+        <div class="col">
+          <textarea class="form-control" name="description" rows="3">{{contest.description}}</textarea>
+        </div>
+      </div>
+      <div class="row mb-2">
+            <div class="col-lg-6 col-md-12">
+              <label class="col-sm-2 col-form-label">開始時間</label>
+              <input type="datetime-local"
+                     class="form-control"
+                     name="start_time"
+                     value="{{ contest.start_time|date:'Y-m-d' }} {{ contest.start_time|time:'H:i' }}">
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+              <label class="col-sm-2 col-form-label">結束時間</label>
+              <input class="form-control" type="datetime-local" value="{{ contest.end_time|date:'Y-m-d' }} {{ contest.end_time|time:'H:i' }}" name="end_time"/>
+            </div>
+      </div>
+      <div class="row mb-2">
+            <div class="col-lg-6 col-md-12">
+              <label class="col-form-label">密碼(尚未使用)</label>
+              <input type="text" class="form-control" name="password" value="{{ contest.password }}">
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+              <label class="col-form-label">公開</label>
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       name="is_visible"
+                       value="is_visible_checked"
+                       {% if contest.is_visible == True %}checked{% endif %}
+                       id="checkRemember">
+              </div>
+            </div>
+
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-lg-6 col-md-12">
+        <button type="submit" class="btn btn-sm btn-primary">儲存</button>
+      </div>
+    </form>      
+{% endblock page_content %}
+{% block script_block %}
+<script>
+  window.onload = function() {
+      console.log('{{request.session.page}}');
+      console.log('{{request.session.is_visible_contest}}');
+      console.log('{{request.session.contest_status}}');
+  };
+</script>
+{% endblock script_block %}

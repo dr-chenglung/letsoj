@@ -1,0 +1,278 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+競賽維護
+{% endblock page_title %}
+{% block page_content %}
+    <div class="container mt-2">
+        <h3>競賽維護</h3>
+        <form method="get" action="{% url 'contest_list_manage' %}" class="mb-3">
+            <div class="row align-items-end">
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_visible" value="true" id="isVisible" {% if is_visible == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="isVisible">
+                            挑選公開
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    {% comment %} <label for="contestStatus" class="form-label">Contest Status:</label> {% endcomment %}
+                    <select class="form-select" name="contest_status" id="contestStatus">
+                        <option value="">全部競賽狀態</option>
+                        {% for status, display in ContestStatus.choices %}
+                            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">篩選</button>
+                </div>
+            </div>
+        </form>
+    
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">順序(由大到小)</th>
+                    <th scope="col">名稱</th>
+                    <th scope="col">狀態</th>
+                    <th scope="col">公開</th>
+                    <th scope="col">公布答案</th>
+                    <th scope="col">開始時間</th>
+                    <th scope="col">結束時間</th>
+                    <th scope="col">管理功能</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contest in contests %}
+                    <tr>
+                        <td>{{ contest.id }}</td>
+                        <td>{{ contest.display_seq }}</td>
+                        <td>{{ contest.title }}</td>
+                        <td>
+                            <div id="contest_status_{{ contest.id }}" class="badge 
+                            {% if contest.status == "NOT_STARTED" %}bg-secondary
+                            {% elif contest.status == "ENDED" %}bg-success
+                            {% elif contest.status == "UNDERWAY" %}bg-danger
+                            {% endif %}">
+                            {{ contest.status_label }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check">
+                                <input class="contest-visibility-checkbox" type="checkbox" name="name" value="{{ contest.is_visible }}" id="{{ contest.id }}" {% if contest.is_visible %}checked{% endif %}>
+                            </div>
+                        </td>
+                        <td>
+                            <select name="solution_release_policy" class="form-control solution-release-policy" data-contest-id="{{ contest.id }}" style="min-width: 110px;">
+                                {% for policy, label in SolutionReleasePolicy.choices %}
+                                    <option value="{{ policy }}" {% if contest.solution_release_policy == policy %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="datetime-local" class="form-control" name="start_time" id="{{ contest.id }}" value="{{ contest.start_time|date:'Y-m-d' }}T{{ contest.start_time|time:'H:i' }}">
+                        </td>
+                        <td>
+                            <input class="form-control" type="datetime-local" name="end_time" id="{{ contest.id }}" value="{{ contest.end_time|date:'Y-m-d' }}T{{ contest.end_time|time:'H:i' }}" />
+                        </td>
+                        <td>
+                            <a type="button"
+                               class="btn btn-sm btn-warning"
+                               href="{% url 'contest_update' contest.pk %}?page={{ contests.number }}{% if is_visible %}&is_visible_contest={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}">修改</a>
+                            <a type="button"
+                               class="btn btn-sm btn-info"
+                               href="{% url 'contest_detail_manage' contest.pk %}">+🖉題目</a>
+                            <a type="button"
+                               class="btn btn-sm btn-success"
+                               href="{% url 'contest_duplicate' contest.pk %}?page={{ contests.number }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}">複製</a>   
+                            <a type="button"
+                               class="btn btn-sm btn-primary download_ranking"
+                               href="{% url 'ranking_download' contest.pk %}">排名↓</a>
+                            <a type="button"
+                               class="btn btn-sm btn-danger delete_this"
+                               href="{% url 'contest_delete' contest.pk %}?page={{ contests.number }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}" data-title="{{ contest.title }}">刪除</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if contests.paginator.num_pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if contests.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ contests.previous_page_number }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for i in contests.paginator.page_range %}
+                    {% if contests.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if contests.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ contests.next_page_number }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ contests.paginator.num_pages }}{% if is_visible %}&is_visible={{ is_visible }}{% endif %}{% if selected_status %}&contest_status={{ selected_status }}{% endif %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+    <script>
+        $(".delete_this").click(function(){
+            var title = $(this).data('title');
+            var result = window.confirm('確定刪除? "' + title + '"');            
+            if (result == false) {
+                //e.preventDefault();
+                return false;
+            };
+        });
+
+
+        $("input[name='start_time'").on("change.datetimepicker", function() {
+            //console.log(this.value);
+
+            //$(this).attr("value")  $(this).val() gets the old value (before changed) in input tag
+            //this.value can get the modified value
+            //console.log($(this).attr("value"));
+            //console.log($(this).attr("id"));
+            let contest_id = $(this).attr("id");
+            jQuery.ajax({
+              type: "POST",
+              url: "/manage/update_contest_start_time/",
+              data: {
+                //start_time: $(this).val(),
+                start_time: this.value,
+                contest_id: $(this).attr("id"),
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+              }, //pass to server
+              success: function (response) {
+                // "this" is undefined in here 
+                //console.log($(this).attr("id"));
+                //location.reload();
+                //console.log(response.contest_status);
+
+                let statusElement = $('#contest_status_'.concat(contest_id));
+                statusElement.empty();
+                statusElement.removeClass('bg-secondary bg-success bg-danger');
+                if (response.contest_status === "NOT_STARTED") {
+                    statusElement.addClass('bg-secondary');
+                } else if (response.contest_status === "ENDED") {
+                    statusElement.addClass('bg-success');
+                } else if (response.contest_status === "UNDERWAY") {
+                    statusElement.addClass('bg-danger');
+                }
+                statusElement.text(response.contest_status_label);
+              }, //success function
+            }); //ajax
+            
+          });
+
+        $("input[name='end_time'").on("change.datetimepicker", function() {
+            let contest_id = $(this).attr("id");
+            jQuery.ajax({
+              type: "POST",
+              url: "/manage/update_contest_end_time/",
+              data: {
+                //start_time: $(this).val(),
+                end_time: this.value,
+                contest_id: $(this).attr("id"),
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+              }, //pass to server
+              success: function (response) {
+                let statusElement = $('#contest_status_'.concat(contest_id));
+                statusElement.removeClass('bg-secondary bg-success bg-danger');
+    
+                if (response.contest_status === "NOT_STARTED") {
+                    statusElement.addClass('bg-secondary');
+                } else if (response.contest_status === "ENDED") {
+                    statusElement.addClass('bg-success');
+                } else if (response.contest_status === "UNDERWAY") {
+                    statusElement.addClass('bg-danger');
+                }
+    
+                statusElement.text(response.contest_status_label);
+              }, //success function
+            }); //ajax
+            
+          });
+    
+                
+        $(".contest-visibility-checkbox").on("change", function () {
+
+            //if ($(this).prop("checked")) 
+            let is_visible = "False";
+            if ($(this).is(":checked")) 
+            {
+            //$(this).attr("value", "True");
+            //$(this).attr("checked", false);
+            //$(this).prop('checked', false);
+            //console.log("true");
+            is_visible = "True";
+            }
+            
+            jQuery.ajax({
+            type: "POST",
+            url: "/manage/update_contest_visibility/",
+            data: {
+                is_visible: is_visible,
+                contest_id: $(this).attr("id"),
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+            }, //pass to server
+            success: function (response) {
+                //console.log(response);
+            }, //success function
+            }); //ajax
+            
+        });
+
+        $(".solution-release-policy").on("change", function() {
+            const selectElement = $(this);
+            const policyValue = selectElement.val();
+            const contestId = selectElement.data("contest-id");
+            //console.log(policyValue);
+    
+            $.ajax({
+                url: '/manage/update_solution_release_policy/',
+                type: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'  // Ensure CSRF token is included
+                },
+                data: JSON.stringify({
+                    contest_id: contestId,
+                    solution_release_policy: policyValue
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        alert(`競賽公布解答方式: ${policyValue}`);
+                    } else {
+                        alert('Failed to update solution release policy.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating solution release policy.');
+                }
+            });
+        });
+    </script>
+{% endblock page_content %}

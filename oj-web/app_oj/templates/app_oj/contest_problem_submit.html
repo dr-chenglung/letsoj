@@ -1,0 +1,385 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}
+  提交答案
+{% endblock page_title %}
+{% block page_content %}
+  <!-- Current Contest -->
+  <div class="mt-2">
+    <h3 class="text-primary">提交你的答案(Submit Your Code)</h3>
+    <label>(1)排名依據你完成題數與完成最終時間長短計算。(2)提交錯誤不懲罰時間。(3)Accepted之後也可以再次提交更完美的版本，但會影響你的排名。</label>
+  </div>
+  <div class="mt-2">
+    <table class="table table-sm table-striped">
+      <thead>
+        <tr>
+          <th scope="col">競賽名稱(點選可回考題列表)</th>
+          <th scope="col">要求語言</th>
+          <th scope="col">倒數時間</th>
+          <th scope="col" class="d-none d-md-table-cell">結束時間</th>
+          <th scope="col" class="d-none d-md-table-cell">看排名</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <a href="{% url 'contest_detail' contest.id %}">{{ contest.title }}</a>
+          </td>
+          <td>
+              <label class="badge bg-success rounded-pill">{{contest_problem.problem.language}}</label>
+          </td>
+          <td>
+              <span id="countDownTimer" class="badge bg-info rounded-pill"></span>
+          </td>
+          <td class="d-none d-md-table-cell">
+            <label class="badge text-dark rounded">{{ contest.end_time|date:"Y-m-d" }}</label>
+            <label class="badge bg-info rounded">{{ contest.end_time|date:"D" }}</label>  
+            <label class="badge bg-danger rounded"> {{ contest.end_time|time:"H:i" }}</label>
+          </td>
+          <td class="d-none d-md-table-cell">
+            <a href="{% url 'get_contest_ranking' contest.id %}"><span class="badge bg-warning rounded-pill">Rank</span></a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- column -->
+  <div class="mt-2">
+    <h4>[題號:{{ contest_problem.id_prblm_in_contest }}]  {{ contest_problem.problem.title }}</h4>
+    <div class="form-control">{{ contest_problem.problem.description|safe }}</div>
+  </div>
+  <!-- 輸入輸出範例輸入輸出範例 -->
+  {% if contest_problem.problem.input_output_description %}
+    <div class="mt-3">
+      <h5>輸入輸出範例</h5>
+      <div class="card">
+        <div class="card-body">
+          <div id="input_output_description">{{ contest_problem.problem.input_output_description|safe }}</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  <!-- 提交後回傳的訊息 -->
+  <div class="mt-3 mb-3">
+    <!-- Show submission message -->
+    <div>
+      <h5>
+        <span id="submission_result" class="badge rounded-pill bg-danger">提交後回傳的訊息~{{ submission.judge_status_description }}</span>
+      </h5>
+    </div>
+    <div>
+      <textarea readonly class="form-control" id="compile_output" rows="10" style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4 ;background-color:#c2f2cf;">{{submission.judge_compile_output}}</textarea>
+    </div>
+  </div>
+
+  <!-- 提交按鈕  -->
+  <!-- Accepted後是否允許提交disabled加上以下條件: or submission.judge_status_description == "Accepted" -->
+  <div>
+    {% if not user.is_staff %}
+        {% if contest.status == "ENDED" or submission.judge_status_description == "Accepted" %}
+            <button type="button" id="submitMyCode" class="btn btn-primary" disabled>
+                提交程式碼...
+            </button>
+        {% else %}
+            <button type="button" id="submitMyCode" class="btn btn-primary">
+                提交程式碼...
+            </button>
+        {% endif %}
+    {% else %}
+        <button type="button" id="submitMyCode" class="btn btn-primary">
+            提交程式碼...
+        </button>
+    {% endif %}
+  </div>
+  <!-- 提交按鈕動畫 -->
+  <!-- spinner -->
+  <div class="spinner-border text-danger" role="status" id="mySpinner">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <!-- 程式碼編輯區editor -->
+  <div class="mb-3 mt-3">
+    <textarea id="editor"></textarea>
+  </div>
+  <!-- 參考程式碼編輯區editor -->
+  {% if contest_problem.problem.sample_code %}
+    <div class="mb-3 mt-3">
+      <label class="mb-3 badge rounded-pill bg-danger fs-6">參考答案</label>
+      <textarea id="editor_solution"></textarea>
+    </div>
+  {% endif %}
+{% endblock page_content %}
+{% block link_css %}
+  <!-- Include highlight.js CSS for code color in problem description -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+
+  <!-- For codeMirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
+
+{% endblock link_css %}
+{% block script_block %}
+  <!-- marked.js 後端已經渲染，不在前端渲染 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/7.0.0/marked.min.js"></script>
+  -->
+  <!-- This config is for MathJax, Ensure that the MathJax configuration script comes before the script that loads -->
+  <!-- $ $ inline 似乎與其他套件有衝突 只能使用 "\\(", "\\)" -->
+  <script type="text/x-mathjax-config">
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ["\\(", "\\)"]],
+        processEscapes: true,
+      }
+    }
+  </script>
+  <!-- The following js is for math equation
+    <script id="MathJax-script" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml-full.min.js"></script>
+  
+  <!-- Include highlight.js JavaScript for coloring code -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <!-- For Java code textarea 提交程式碼區 -->
+  <!-- CodeMirror程式碼編輯區 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+
+  <script>
+ 
+    var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+        lineNumbers: true,
+        //viewportMargin: 15, // Set the number of rows??
+        mode: "text/x-java",
+        theme: "monokai",
+        autoRefresh: true,
+        viewportMargin: Infinity,
+        lineWrapping: true,  // Prevents horizontal scroll by wrapping long lines
+    });
+
+    //var txtAra_user_sourceCode = document.querySelector('textarea[name="user_sourceCode"]');
+    //editor.setValue(txtAra_user_sourceCode.value);
+
+    // 字型大小Set the text size
+    editor.getWrapperElement().style.fontSize = '15px';
+
+    var user_submitted_code = `{{submission.source_code|escapejs|safe}}`;
+    editor.setValue(user_submitted_code);
+  </script>
+
+  <script>
+    var editorSolutionElement = document.getElementById('editor_solution');
+    // when the element is found, create the editor
+    if (editorSolutionElement) {
+      var editor_solution = CodeMirror.fromTextArea(editorSolutionElement, {
+          lineNumbers: true,
+          mode: "text/x-java",
+          theme: "monokai",
+          autoRefresh: true,
+          viewportMargin: Infinity,
+          lineWrapping: true,  // Prevents horizontal scroll by wrapping long lines
+      });
+
+      // Set the text size
+      editor_solution.getWrapperElement().style.fontSize = '15px';
+      var sample_code = `{{contest_problem.problem.sample_code|escapejs|safe}}`;
+      editor_solution.setValue(sample_code);
+    } else {
+      //不公布參考答案
+      //console.error("Element with ID 'editor_solution' not found.");
+    }
+  </script>
+
+  <script>
+    button_ready_submission();
+    function button_after_submission() {
+      document.getElementById("mySpinner").style.display = "block";
+      document.getElementById("submitMyCode").style.display = "none";
+    }
+
+    function button_ready_submission() {
+      document.getElementById("submitMyCode").style.display = "block";
+      document.getElementById("mySpinner").style.display = "none";
+    }
+    
+
+  $("#submitMyCode").on("click", function () {
+
+    // 從editor中取得提交程式碼
+    let user_submitted_code = editor.getValue();
+    //let sourceCode = $("#sourceCode").val();
+    //console.log(user_submitted_code);
+
+    if (user_submitted_code.trim()=="") 
+    {
+      alert("程式碼不可空白!");
+      return;
+    }
+    
+    button_after_submission();
+    
+    //console.log(user_submitted_code);
+
+    jQuery.ajax({
+      type: "POST",
+      url: "/api/submit/",
+      //async: true,
+      //contentType: "application/json",
+      data: {
+        source_code: user_submitted_code,
+        problem_id: {{contest_problem.problem.pk}},
+        contest_id: {{contest.id}},
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      }, //pass to server
+      success: function (response) {
+        //如果已經接受或過期或尚未開始，則返回-->在前面已經處理，按鈕無法點擊，此處可以不處理
+        if ((response.result_status === "Expired") || (response.result_status === "Accepted") || (response.result_status === "NotYetStart") ){
+          return;
+        } else if (response.result_status === "SubmittingToJudgerOK") {
+          //回傳結果若為"SubmittingToJudgerOK"，則依據task_token去向後端要結果
+          const task_token = response.task_token;
+          //console.log("task_token: " + task_token);
+          pollForResult(task_token);
+        } else if (response.result_status === "SubmittingToJudgerError"){
+          console.log(response.result_status);
+          button_ready_submission();
+          alert("提交到Judger回覆有Error錯誤~請聯絡管理員!");
+        } else {
+          console.log(response.result_status);
+          button_ready_submission();
+          alert("提交到Judger回覆有其他伺服器內部Error錯誤~請聯絡管理員!");
+        }
+      }, //success function
+      error: function(xhr, errmsg, err) {
+        console.log(`${xhr.status}: ${xhr.responseText}`);
+        button_ready_submission();
+        alert("提交到Judger失敗~請聯絡管理員!");
+      }//error function
+    }); //ajax
+  });//submitMyCode click
+
+
+  function pollForResult(task_token) {
+    var timeout = 12000; // 設置超時為12秒
+    var start_time = new Date().getTime();
+
+    var interval = setInterval(function() {
+        var current_time = new Date().getTime();
+        if (current_time - start_time > timeout) {
+            clearInterval(interval);
+            alert("程式執行超時了~請修正程式碼，重新繳交!");
+            button_ready_submission();
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/api/get_submission_result/",
+            data: {
+              task_token: JSON.stringify(task_token),
+              problem_id: {{contest_problem.problem.pk}},
+              contest_id: {{contest.id}},
+              csrfmiddlewaretoken: "{{ csrf_token }}",
+            }, //pass to server
+
+            success: function(response) {
+                if (response.result_status === "JudgerSUCCESS") {
+                    clearInterval(interval);
+                    //console.log("sucessfully get result")
+                    //顯示區先要清空
+                    $("#submission_result").empty();
+                    $("#compile_output").empty();
+
+                    const statusDiscription = response.judge_status_description
+                    $("#submission_result").append(statusDiscription);
+
+                    //setTimeout(function() { alert(statusDiscription); }, 2);
+
+                    const compile_output = response.judge_compile_output;
+                    $("#compile_output").append(compile_output);
+                    
+                    if (statusDiscription == "Accepted")
+                    {
+                      $("#compile_output").append("~給你按個讚!~");
+                    }
+
+                    button_ready_submission();
+                    
+                    return; //直接結束離開 之後不再執行
+
+                } else if (response.result_status === "JudgerInQueueOrProcessing") {
+                  //不處理直接繼續輪詢
+                  //console.log("InQueue, get result again.")
+                  //clearInterval(interval);
+                  //alert("Task failed!");
+                } else if (response.result_status === "GetJudgerResultError") {
+                  console.log(response.result_status);
+                  clearInterval(interval);
+                  alert("取結果得到Error~請聯絡管理員!");
+                  button_ready_submission();
+                } else {
+                    //沒有定義的其他情況
+                    console.log(response.result_status);
+                    clearInterval(interval);
+                    alert("取結果得到其他Error~請聯絡管理員!");
+                    button_ready_submission();
+                }
+            },
+            error: function(xhr, errmsg, err) {
+                //console.log(xhr.status + ": " + xhr.responseText);
+                clearInterval(interval);
+                alert("取結果失敗~請聯絡管理員!");
+                button_ready_submission();
+            }
+        });
+    }, 3000); // 3000每3秒再取提交結果一次(輪詢) 
+  }
+
+  </script>
+  <!-- countdown timer -->
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
+  <script>
+  // 這裡啟動倒數計時器
+  setCountDownTimer("countDownTimer", '{{contest.end_time}}');
+  //setCountDownTimer("countDownTimer", "Feb. 15, 2024 15:37:25");
+  function setCountDownTimer(countdownElement, endTime) {
+    //"Feb. 15, 2024 15:37:25"
+    //Feb. 11, 2024, 1:07 a.m.
+    //convert format from Feb. 11, 2024, 1:07 a.m. to 24 hours
+    let end_time = moment(endTime, 'MMM DD, YYYY, h:m a').format('YYYY-MM-DD HH:mm:ss');
+    //console.log(end_time);
+
+    // Set the date we're counting down to
+    var countDownDate = new Date(end_time).getTime();
+
+    // Update the count down every 1 second
+    var x = setInterval(function () {
+      // Get today's date and time
+      var now = new Date().getTime();
+
+      // Find the distance between now and the count down date
+      var distance = countDownDate - now;
+
+      // Time calculations for days, hours, minutes and seconds
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      var minutes = Math.floor(
+        (distance % (1000 * 60 * 60)) / (1000 * 60)
+      );
+      var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      // Output the result in an element with id="countDownTimer"
+      document.getElementById(countdownElement).innerHTML =
+        days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+
+      // If the count down is over, write some text
+      if (distance < 0) {
+        clearInterval(x);
+        document.getElementById(countdownElement).innerHTML = "EXPIRED";
+      }
+    }, 1000);
+  } //function
+  </script>
+{% endblock script_block %}

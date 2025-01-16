@@ -1,0 +1,145 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+    挑選考題
+{% endblock page_title %}
+{% block page_content %}
+    <div class="col-12 mt-2">
+        <h3>挑選競賽的考題</h3>
+
+        <h5>競賽名稱: <span class="badge bg-info"><a href="{% url 'contest_detail_manage'  contest.id %}">(返回競賽){{ contest.title }}</a></span></h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">挑選</th>
+                    <th scope="col">標題</th>
+                    <th scope="col">題目主題</th>
+                    <th scope="col">語言</th>
+                    <th scope="col">隸屬競賽</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for problem in problems %}
+                    <tr>
+                        <td>{{ problem.id }}</td>
+
+                        <td>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="contest_owns" value="{{ problem.id }}" id="{{ problem.id }}">
+                                {% for pb in contest_problems %}
+                                    {% if problem.id == pb.problem.id %}
+                                        <input class="form-check-input" type="checkbox" name="contest_owns" value="{{ problem.id }}" id="{{ problem.id }}" checked>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            {{ problem.title }}
+                        </td>
+                        <td>
+                            <small>
+                                {% for category in problem.categories.all %}
+                                    {{ category.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    未分類
+                                {% endfor %}
+                            </small>
+                        </td>
+                        <td>{{ problem.language }}</td>
+                        <td>
+                            <small id="display_contest_titles_{{ problem.id }}">
+                                {% for contest in problem.contests.all %}
+                                    {{ contest.title }},
+                                {% endfor %}
+                            </small>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if problems.paginator.num_pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if problems.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ problems.previous_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for num in problems.paginator.page_range %}
+                    <li class="page-item {% if problems.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}">{{ num }}</a>
+                    </li>
+                {% endfor %}
+                {% if problems.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ problems.next_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ problems.paginator.num_pages }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}    
+    </div>
+    
+    <script>
+    
+    $(".form-check-input").on("change", function () {
+        //alert("select");
+        //if ($(this).prop("checked")) 
+        let is_selected = "False";
+        let problem_id = $(this).attr("id");
+
+        if ($(this).is(":checked")) 
+        {
+        //$(this).attr("value", "True");
+        //$(this).attr("checked", false);
+        //$(this).prop('checked', false);
+        is_selected = "True";
+        }
+        console.log(is_selected);
+        
+        jQuery.ajax({
+        type: "POST",
+        url: "{% url 'update_contest_owns_problems' %}",
+        data: {
+            contest_id: {{ contest.id }},
+            problem_id: $(this).attr("id"),
+            is_selected: is_selected,
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+        }, //pass to server
+        success: function (response) {
+            const problem_contests = response.problem_contests;
+            //const problem_contests = JSON.stringify(response.problem_contests);
+
+            console.log(response.problem_contests);
+            console.log(problem_id);
+            console.log(problem_contests.length);
+            
+            
+            $("#display_contest_titles_".concat(problem_id)).empty();
+            
+            for (let i=0; i < problem_contests.length; i++)
+            {
+                $("#display_contest_titles_".concat(problem_id)).append( problem_contests[i].title + ",");
+            }
+
+        }, //success function
+        }); //ajax
+        
+    });
+    </script>
+{% endblock page_content %}

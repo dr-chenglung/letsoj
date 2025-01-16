@@ -1,0 +1,29 @@
+
+{% extends "app_oj/base.html" %}
+
+{% block page_title %}公告{% endblock page_title %}
+
+{% block page_content %}
+<div class="container mt-2">
+    <h5 class="text-info">Let's go code together!</h5>
+    <h2 class="text-primary">最新公告</h2>
+    {% for news in active_news %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ news.message }}</h6>
+                        <p class="card-text">
+                            <small class="text-muted text-end d-block">
+                                公布日期:{{ news.start_time|date:"Y-m-d H:i" }}
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>目前沒有公告。</p>
+    {% endfor %}
+</div>
+{% endblock page_content %}
