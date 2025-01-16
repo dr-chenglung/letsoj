@@ -3,9 +3,8 @@
 
 ![image](https://github.com/dr-chenglung/letsoj/blob/main/extra-data/contest-list.png)
 
-<h2>系統如何建立?</h2>
-系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等      
-
+# 系統建立
+系統以 Django 開發，整個系統包含Django web, Postegres資料庫、Judge0判題系統、nginx以及gunicorn伺服器等。      
 
 每個模組皆安裝運行在Docker容器(container)內。  
 
@@ -13,7 +12,12 @@
 
 若是使用Windows系統的Docker進行安裝也可以，但是OJ無法進行考試IP管制，其餘功能皆可正常運作。
 
-備註:  Judge0若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結1](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)與[連結2](https://github.com/judge0/judge0/issues/325))
+# Judge0
+Robust, scalable, and open-source online code execution system.  
+
+此OJ採用[Judge0 Extra CE](https://github.com/judge0/judge0/tree/extra) 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)
+
+備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
  
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
