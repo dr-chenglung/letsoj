@@ -1555,3 +1555,152 @@ def export_all_scores_to_excel(request):
 
     workbook.save(httpResponse)
     return httpResponse
+
+@staff_member_required
+def import_problems_from_excel(request):
+    if request.method == 'POST':
+        # id	category	title	description	input_output_description	std_input	std_output	sample_code	created_at	modified_at	is_sample_code_visible	is_visible	languages	template	note
+        
+        # Define the fields to be imported
+        # fields = [field.name for field in Problem._meta.get_fields() if field.name != 'categories']
+        
+        fields = [field.name for field in Problem._meta.get_fields() if not isinstance(field, ( ForeignObjectRel)) and field.name != 'id']
+        
+        data = {}
+        try:
+            excel_file = request.FILES['excel_file']
+            wb = load_workbook(excel_file)
+            ws = wb.active
+
+            for row in ws.iter_rows(min_row=2, values_only=False):
+                for idx, cell in enumerate(row):
+                    # 如果是空的Excel欄位值，將其設定為""空字串比較好，系統預設會設定為"None"字串，這樣很麻煩!
+                    # std_input欄位有時候會是空字串，匯出Excel時會使得Excel欄位值為空的，因此匯入時需要特別處理。
+                    
+                    # Get the field name from the header row
+                    column_letter = cell.column_letter
+                    field_name = ws[f'{column_letter}1'].value  
+                    
+                    logger.info(field_name)
+                    if field_name == 'categories':
+                        if cell.value is not None:
+                            category_names = [name.strip() for name in cell.value.split(',')]                    
+                    elif field_name == 'language':
+                        if cell.value is not None:
+                            language_name = cell.value.strip() 
+                            language = Language.objects.get(name=language_name)  
+                            data[field_name] =  language               
+                    else:
+                        data[field_name] = cell.value if cell.value is not None else ""                    
+                    logger.info(cell.value)
+                
+                # Remove the id field because it is auto-generated
+                # id欄位不需要，因為是自動產生的
+                data.pop('id', None)  
+                logger.info(data)
+                # Create the Problem object
+                problem = Problem.objects.create(**data)
+                # problem.save()
+                logger.info(problem)
+                # Process categories
+                if category_names:
+                    categories = []
+                    for name in category_names:
+                        category, created = ProblemCategory.objects.get_or_create(name=name)
+                        categories.append(category)
+                    problem.categories.set(categories)
+                    
+            messages.success(request, "匯入考題成功!")
+        except Exception as e:
+            messages.error(request, e)
+            messages.error(request, "匯入錯誤:注意欄位必須正確且內容必須為純文字!")
+    return render(request, 'app_management/import_problems_from_excel.html')
+
+@staff_member_required
+def export_problems_to_excel(request):
+
+    if request.method == "POST":
+
+        # 欲匯出的編號
+        # 前端會將有勾選的input value送到後端
+        # <input class="form-check-input" type="checkbox" name="problem_exported" value="{{ problem.pk }}">
+        exported_problems = request.POST.getlist("problem_exported")
+        logger.info(exported_problems)
+
+        # 匯出
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = (
+            'attachment; filename="oj_exported_problems.xlsx"'
+        )
+
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Ranking Data"
+
+        # Write header row
+        # fields = ['id','category', 'title', 'description', 'input_output_description','std_input','std_output','sample_code','created_at','modified_at','is_sample_code_visible','is_visible','languages','template','note']
+
+        # ['contests', 'contestproblem', 'submission', 'id', 'category', 'title', 'description', 'input_output_description', 'std_input', 'std_output', 'sample_code', 'created_at', 'modified_at', 'is_sample_code_visible', 'is_visible', 'languages', 'template', 'note', 'categories']
+        # skipped_fields = ['contestproblem']
+        # 取得所有欄位名稱 但是要排除掉不需要的欄位 例如: contests contestproblem 外鍵欄位
+        fields = [
+            field.name
+            for field in Problem._meta.get_fields()
+            if not isinstance(field, (ForeignObjectRel))
+        ]
+        logger.info(fields)
+
+        for col_num, column_title in enumerate(fields, 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.value = column_title
+
+        for row_idx, problem_pk in enumerate(exported_problems, 1):
+            problem = Problem.objects.get(pk=problem_pk)
+            for col_idx, column_name in enumerate(fields, 1):
+                logger.info(column_name)
+                if column_name == "categories":
+                    # Handle the many-to-many field separately
+                    categories = problem.categories.all()
+                    category_names = ", ".join(
+                        [category.name for category in categories]
+                    )
+                    value = category_names
+                    logger.info(value)
+                elif column_name == "contests":
+                    # Handle the many-to-many field separately
+                    contests = problem.contests.all()
+                    contest_names = ", ".join([contest.title for contest in contests])
+                    value = contest_names
+                    logger.info(value)
+                else:
+                    value = getattr(problem, column_name)
+
+                if isinstance(value, datetime):
+                    value = value.astimezone(taipei_timezone).strftime(
+                        "%Y/%m/%d %H:%M:%S"
+                    )
+                if value == []:
+                    value = ""
+
+                logger.info(value)
+                worksheet.cell(row=1 + row_idx, column=col_idx).value = value
+
+        workbook.save(response)
+        return response
+        # return redirect('problem_list')
+
+    else:
+        problems = Problem.objects.all().order_by("-id")
+        # problems = Problem.objects.all().order_by("-created_at")
+        page = request.GET.get("page", 1)
+        paginator = Paginator(problems, 25)
+        try:
+            problems = paginator.page(page)
+        except PageNotAnInteger:
+            problems = paginator.page(1)
+        except EmptyPage:
+            problems = paginator.page(paginator.num_pages)
+        context = {"problems": problems}
+        return render(request, "app_management/export_problems_to_excel.html", context)

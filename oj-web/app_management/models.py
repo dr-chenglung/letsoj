@@ -175,7 +175,6 @@ class Problem(models.Model):
 
     # 章節主題
     categories = models.ManyToManyField(ProblemCategory, related_name="problems")
-    # category = models.ForeignKey(ProblemCategory, on_delete=models.CASCADE)
 
     title = models.CharField(max_length=500)
     description = models.TextField(null=True, blank=True)
@@ -189,10 +188,11 @@ class Problem(models.Model):
     # languages_1 = models.JSONField(default=list, null=True, blank=True)
     language = models.ForeignKey(
         Language,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="problems",
         default=None,
         null=True,
+        blank=True,
     )
 
     # 新增的困難度欄位 尚未使用
@@ -247,7 +247,7 @@ class Problem(models.Model):
         #     "expected_output":problem.std_output
         # }]
         return test_case_list
-
+    @staticmethod
     def default_data():
         return """
         //PREPEND BEGIN

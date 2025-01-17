@@ -42,7 +42,11 @@ urlpatterns = [
 
     # 匯入使用者
     path('import_users_from_excel/', views.import_users_from_excel, name="import_users_from_excel"),
-
+   
+    # 匯出入題目
+    path('import_problems_from_excel/', views.import_problems_from_excel, name="import_problems_from_excel"),
+    #path('export_problems_to_excel/', views.export_problems_to_excel, name="export_problems_to_excel"),
+    
     # 匯出總成績表(期末成績)
     path('export_all_scores_to_excel/', views.export_all_scores_to_excel, name="export_all_scores_to_excel"),
 
