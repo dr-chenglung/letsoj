@@ -3,7 +3,10 @@
   匯入題目
 {% endblock page_title %}
 {% block page_content %}
-  <h3>匯入題目(匯入格式請參考匯出題目的格式，但不要有id欄位，題目會被新增到資料庫。)</h3>
+  <h3>匯入題目(匯出題目請至Admin，格式無id欄位，新增一筆非取代)</h3>
+  <label>
+    匯入考題之前，必須先將Language與Problem category兩個表格先匯入，否則匯入的考題會不完整!
+  </label>
   <div class="col-6 mt-2">
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
