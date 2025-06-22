@@ -42,7 +42,7 @@ docker compose logs -f
 
 # 資料庫位置
 在letsoj目錄下:  
-oj-db/postgres
+oj-postgres-db/postgres
 
 請定期經常備份資料庫，Ubuntu環境下，可以修改/etc/crontab檔案，進行定期備份到雲端硬碟。
 
@@ -53,16 +53,17 @@ oj-db/postgres
 # 使用舊資料庫啟動OJ
 
 請將你的舊資料庫放在letsoj目錄下:  
-oj-db/postgres
+oj-postgres-db/postgres
 
 重新啟動容器即可順利使用舊有或移轉的資料庫
 
-可以下載範例資料庫壓縮檔(尚未提供)，解壓縮置放於oj-db目錄下，啟動後即可快速熟悉OJ所有的功能。
+可以下載範例資料庫壓縮檔(尚未提供)，解壓縮置放於oj-postgres-db目錄下，啟動後即可快速熟悉OJ所有的功能。
 
 # 開發者程式碼
 
 你可以啟動開發者模式，進行OJ系統程式開發  
-docker compose -f docker-compose-dev.yml up -d
+修改docker-compose.yml
+DEV_SERVER: true 
 
 程式碼位置在letsoj目錄下:  
 oj-web/
