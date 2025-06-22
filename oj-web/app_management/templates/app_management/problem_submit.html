@@ -1,0 +1,253 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  提交答案
+{% endblock page_title %}
+{% block page_content %}
+  <!-- Current Contest -->
+  <div class="mt-2">
+    <h3>管理者提交答案測試</h3>
+  </div>
+  <!-- column -->
+  <div class="mt-2">
+    <h4>(題號:{{ problem.id }})<label class="badge bg-danger rounded-pill fs-6">{{problem.language}}</label>{{ problem.title }}</h4>
+    <div class="form-control">{{ problem.description|safe }}</div>
+  </div>
+  <!-- 輸入輸出範例輸入輸出範例 -->
+  {% if problem.input_output_description %}
+    <div class="mt-3">
+      <h5>輸入輸出範例</h5>
+      <div class="card">
+        <div class="card-body">
+          <div id="input_output_description">{{ problem.input_output_description|safe }}</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  <!-- 提交後回傳的訊息 -->
+  <div class="mt-3">
+      <!-- Show submission message -->
+        <h5>
+          <span id="submission_result" class="badge rounded-pill bg-danger">提交後回傳的訊息~{{ submission.judge_status_description }}</span>
+        </h5>
+      <div>
+        <textarea readonly class="form-control" id="compile_output" rows="5" style="background-color:#F3F3FA">
+                        {{submission.judge_compile_output}}
+                      </textarea>
+      </div>
+  </div>
+  <!-- 提交按鈕動畫 -->
+  <div class="mt-3">
+    <button type="button" id="submitMyCode" class="btn btn-primary">管理者提交範例程式碼...</button>
+  </div>
+  <div class="spinner-border text-danger" role="status" id="mySpinner">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <!-- 程式碼編輯區editor -->
+  <div class="mt-3">
+      <textarea id="editor"></textarea>
+  </div>
+{% endblock page_content %}
+{% block link_css %}
+  <!-- Include highlight.js CSS for code color in problem description -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <!-- For codeMirror -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
+{% endblock link_css %}
+{% block script_block %}
+  <!-- marked.js 後端已經渲染，不在前端渲染
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/7.0.0/marked.min.js"></script>
+  -->
+  <!-- This config is for MathJax, Ensure that the MathJax configuration script comes before the script that loads   -->
+  <!-- $ $ inline 似乎與其他套件有衝突 只能使用 "\\(", "\\)" -->
+  <script type="text/x-mathjax-config">
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ["\\(", "\\)"]],
+          processEscapes: true,
+        }
+      }
+  </script>
+  <!-- The following js is for math latest equation
+      <script id="MathJax-script" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml-full.min.js"></script>
+  <!-- Include highlight.js JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <!-- For Java code textarea 提交程式碼區 -->
+  <!-- CodeMirror程式碼編輯區 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+        lineNumbers: true,
+        //viewportMargin: 15, // Set the number of rows
+        mode: "text/x-java",
+        theme: "monokai",
+        autoRefresh: true,
+        viewportMargin: Infinity,
+        lineWrapping: true,  // Prevents horizontal scroll by wrapping long lines
+    });
+
+    // Set the text size
+    editor.getWrapperElement().style.fontSize = '15px';
+    var sample_code = `{{ problem.sample_code|escapejs|safe }}`;
+    editor.setValue(sample_code);
+  </script>
+  <script>
+      button_ready_submission();
+      function button_after_submission() {
+        document.getElementById("mySpinner").style.display = "block";
+        document.getElementById("submitMyCode").style.display = "none";
+      }
+  
+      function button_ready_submission() {
+        document.getElementById("submitMyCode").style.display = "block";
+        document.getElementById("mySpinner").style.display = "none";
+      }
+      
+    $("#submitMyCode").on("click", function () {
+  
+      //直接拿editor中的內容做提交
+      let sourceCode = editor.getValue()
+      //let sourceCode = $("#sourceCode").val();
+  
+      if (sourceCode.trim()=="") 
+      {
+        alert("程式碼不可空白!");
+        return;
+      }
+      //console.log(sourceCode);
+      
+      button_after_submission();
+  
+      jQuery.ajax({
+        type: "POST",
+        url: "/manage/submit_to_judger/",
+        //async: true,
+        //contentType: "application/json",
+        data: {
+          source_code: sourceCode,
+          problem_id: {{problem.pk}},
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+        }, //pass to server
+        success: function(response){
+          if (response.result_status === "SubmittingToJudgerOK") {
+            //回傳結果若為"SubmittingToJudgerOK"，則依據task_token去向後端要結果
+            const task_token = response.task_token;
+            console.log("task_token: " + task_token);
+            pollForResult(task_token);
+          } else if (response.result_status === "SubmittingToJudgerError"){
+            console.log(response.result_status);
+            button_ready_submission();
+            alert("提交到Judger回覆有Error錯誤~請聯絡管理員!");
+          } else {
+            console.log(response.result_status);
+            button_ready_submission();
+            alert("提交到Judger回覆有其他伺服器內部Error錯誤~請聯絡管理員!");
+          }
+        }, //success function
+        error: function(xhr, errmsg, err) {
+          console.log(`${xhr.status}: ${xhr.responseText}`);
+          button_ready_submission();
+          alert("提交到Judger失敗~請聯絡管理員!");
+        }//error function
+        
+      }); //ajax
+    }); //submitMyCode click
+  
+    function pollForResult(task_token) {
+      var timeout = 12000; // 設置超時為12秒
+      var start_time = new Date().getTime();
+  
+      var interval = setInterval(function() {
+          var current_time = new Date().getTime();
+          if (current_time - start_time > timeout) {
+              clearInterval(interval);
+              alert("程式執行超時了~請修正程式碼，重新繳交!");
+              button_ready_submission();
+              return;
+          }
+  
+          $.ajax({
+              type: "POST",
+              url: "{% url 'get_manager_submission_result' %}",
+              data: {
+                task_token: JSON.stringify(task_token),
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+              }, //pass to server
+  
+              success: function(response) {
+                  if (response.result_status === "JudgerSUCCESS") {
+                      clearInterval(interval);
+                      console.log("sucessfully get submission_result");
+                      //show submission result
+                      //顯示區先要清空
+                      $("#submission_result").empty();
+                      $("#compile_output").empty();
+  
+                      const statusDiscription = response.judge_status_description
+                      $("#submission_result").append(statusDiscription);
+  
+                      
+                      const compile_output = response.judge_compile_output;
+                      $("#compile_output").append(compile_output);
+                      
+                      //console.log(compile_output);
+                      //console.log(compile_output==null);
+  
+                      if (statusDiscription == "Accepted")
+                      {
+                        $("#compile_output").append("~給你按個讚!~");
+                      }
+                      /*
+                      if (compile_output != null) {
+                        $("#compile_output").append(compile_output);
+                      }
+                      else
+                      {
+                        $("#compile_output").append("恭喜你通過了!");
+                      }*/
+  
+                      //alert(statusDiscription); //會比jQuery優先執行
+                      //setTimeout(function() { alert(statusDiscription); }, 2);
+  
+                      button_ready_submission();
+                      
+                      return; //直接結束離開 之後不再執行
+  
+                  } else if (response.result_status === "JudgerInQueueOrProcessing") {
+                      //直接繼續輪詢
+                      console.log("InQueue, get result again.")
+                      //clearInterval(interval);
+                      //alert("Task failed!");
+                      // 繼續輪詢，不清除interval
+                  } else if (response.result_status === "GetJudgerResultError") {
+                      console.log(response.result_status);
+                      clearInterval(interval);
+                      alert("取結果得到Error~請聯絡管理員!");
+                      button_ready_submission();
+                  } else {
+                      //沒有定義的其他情況
+                      console.log(response.result_status);
+                      clearInterval(interval);
+                      alert("取結果得到其他Error~請聯絡管理員!");
+                      button_ready_submission();
+                  }
+              },
+              error: function(xhr, errmsg, err) {
+                  //console.log(xhr.status + ": " + xhr.responseText);
+                  console.log(`${xhr.status}: ${xhr.responseText}`);
+                  clearInterval(interval);
+                  alert("取結果失敗~請聯絡管理員!");
+                  button_ready_submission();
+              }
+          });
+      }, 3000); // 3000每3秒輪詢一次
+  }//pollForResult
+  </script>
+{% endblock script_block %}

@@ -1,0 +1,92 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+    匯出考題
+{% endblock page_title %}
+{% block page_content %}
+    <div class="col-12 mt-2">
+        <h4>匯出考題(匯出部分考題，若要全部匯出，可至Admin資料庫管理者畫面，選取import-export)</h4>
+        <form method="POST" action="{% url 'export_problems_to_excel' %}">
+            {% csrf_token %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">id</th>
+                        <th scope="col">題目主題</th>
+                        <th scope="col">標題</th>
+                        <th scope="col">隸屬競賽</th>
+                        <th scope="col">勾選題目</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problem in problems %}
+                        <tr>
+                            <td>{{ problem.id }}</td>
+                            <td>
+                                <small>
+                                    {% for category in problem.categories.all %}
+                                        {{ category.name }}
+                                        {% if not forloop.last %},{% endif %}
+                                    {% empty %}
+                                        未分類
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>{{ problem.title }}</td>
+                            <td>
+                                <small>
+                                    {% for contest in problem.contests.all %}{{ contest.title }},{% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="problem_exported"
+                                           value="{{ problem.pk }}">
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="row">
+                <div class="col-sm-12">
+                    <button type="submit" class="btn btn-sm btn-primary">確定匯出</button>
+                </div>
+            </div>
+        </form>
+        {% if problems.has_other_pages %}
+            <ul class="pagination">
+                {% if problems.has_previous %}
+                    <li>
+                        <a href="?page={{ problems.previous_page_number }}">&laquo;</a>
+                    </li>
+                {% else %}
+                    <li class="disabled">
+                        <span>&laquo;</span>
+                    </li>
+                {% endif %}
+                {% for i in problems.paginator.page_range %}
+                    {% if problems.number == i %}
+                        <li class="active">
+                            <span>{{ i }}, <span class="sr-only">(current)</span></span>
+                        </li>
+                    {% else %}
+                        <li>
+                            <a href="?page={{ i }}">{{ i }},</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if problems.has_next %}
+                    <li>
+                        <a href="?page={{ problems.next_page_number }}">&raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="disabled">
+                        <span>&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    </div>
+{% endblock page_content %}

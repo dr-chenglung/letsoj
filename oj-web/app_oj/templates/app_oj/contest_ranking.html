@@ -1,0 +1,200 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}
+    競賽排名
+{% endblock page_title %}
+{% block page_content %}
+    <div class="col-12 mt-2">
+        <h4 class="text-primary">競賽排名</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">競賽名稱(點選回到考題列表)</th>
+                    <th scope="col">結束時間</th>
+                    <th scope="col">排名</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <a href="{% url 'contest_detail'  contest.id %}">{{ contest.title }}</a>
+                    </td>
+                    <td>
+                        <label class="text-info">{{ contest.end_time|date:"Y-m-d" }}</label>
+                        <label class="text-primary">{{ contest.end_time|time:"H:i" }}</label>
+                    </td>
+                    <td>
+                        <a href="{% url 'get_contest_ranking'  contest.id %}">刷新</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Grade Distribution Chart -->
+    <div class="row mt-5">
+        <div class="col-md-6 text-center">
+            <h5 class="mt-3">各考生完成題數分布</h5>
+            <div>
+                <canvas id="gradeDistributionChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6 text-center">
+            <h5 class="mt-3">各題目答對人數分布</h5>
+            <div>
+                <canvas id="problemDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Table -->
+    <div class="mt-5">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">排名</th>
+                    <th scope="col">帳號</th>
+                    <th scope="col">姓名</th>
+                    <th scope="col">班別</th>
+                    <th scope="col">題號[錯誤次數]</th>
+                    <th scope="col">每題平均完成時間(分鐘)</th>
+                    <th scope="col">正確題數/提交總次數</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rank in contest_ranks %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ rank.submitted_by }}</td>
+                        <td>{{ rank.submitted_by.full_name }}</td>
+                        <td>{{ rank.submitted_by.user_class }}</td>
+                        <td>
+                            {% for prblm_id, sbmt_info in rank.submission_info.items %}
+                                {% if sbmt_info.is_ac %}
+                                    <span class="badge bg-success">{{ sbmt_info.qz_prblm_id }}[{{ sbmt_info.error_count }}]</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ sbmt_info.qz_prblm_id }}[{{ sbmt_info.error_count }}]</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if rank.total_time > 0 %}
+                                {{ rank.total_time }}
+                            {% else %}
+                                未完成
+                            {% endif %}
+                        </td>
+                        <td>{{ rank.accepted_count }}/{{ rank.submission_count }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock page_content %}
+{% block link_css %}
+{% endblock link_css %}
+{% block script_block %}
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include Chart.js Data Labels plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>
+    // Register the Data Labels plugin
+    Chart.register(ChartDataLabels);
+    // Accepted Count Distribution
+    const gradeDistribution = {{ grade_distribution|safe }};
+    const gradeDistributionLabels = Object.keys(gradeDistribution);
+    const gradeDistributionData = Object.values(gradeDistribution);
+
+    const ctxDistribution = document.getElementById('gradeDistributionChart').getContext('2d');
+    new Chart(ctxDistribution, {
+        type: 'bar',
+        data: {
+            labels: gradeDistributionLabels,
+            datasets: [{
+                //label: '# of Users',
+                data: gradeDistributionData,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false // Disable the legend
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    color: '#000',
+                    font: {
+                        weight: 'bold'
+                    },
+                    formatter: function(value) {
+                        return value;
+                    }
+                }
+            },
+            maintainAspectRatio: false,
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision:0
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+      
+
+    // Problem Distribution
+    const problemDistribution = {{ problem_distribution|safe }};
+    const problemLabels = Object.keys(problemDistribution);
+    const problemData = Object.values(problemDistribution);
+
+    const ctxProblem = document.getElementById('problemDistributionChart').getContext('2d');
+    new Chart(ctxProblem, {
+        type: 'bar',
+        data: {
+            labels: problemLabels,
+            datasets: [{
+                //label: '# of Users',
+                data: problemData,
+                backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false // Disable the legend
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    color: '#000',
+                    font: {
+                        weight: 'bold'
+                    },
+                    formatter: function(value) {
+                        return value;
+                    }
+                }
+            },
+            maintainAspectRatio: false,
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision:0
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+    </script>
+{% endblock script_block %}

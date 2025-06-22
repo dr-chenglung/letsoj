@@ -1,0 +1,114 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+    考題歸屬
+{% endblock page_title %}
+{% block page_content %}
+    <h3>設定考題歸屬於競賽(只能加入競賽，若需刪除，需選取競賽管理功能。)</h3>
+    <h5>
+        考題名稱: <span class="badge bg-info">{{ problem.title }}</span>
+    </h5>
+    <form method="post" action="{% url 'problem_belongs_to' problem.pk %}">
+        {% csrf_token %}
+        <!-- Hidden inputs for prblm_page_num and selected_categories parameters -->
+        <!-- 移除隱藏的input欄位，改用session維護參數 -->
+        {% comment %} <input type="hidden"
+               name="prblm_page_num"
+               value="{{ request.session.prblm_page_num }}">
+        {% for category in request.session.selected_categories %}
+            <input type="hidden" name="selected_categories" value="{{ category }}">
+        {% endfor %} {% endcomment %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">順序</th>
+                    <th scope="col">競賽名稱</th>
+                    <th scope="col">挑選競賽</th>
+                    <th scope="col">競賽狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contest in contests %}
+                    <tr>
+                        <td>{{ contest.id }}</td>
+                        <td>{{ contest.display_seq }}</td>
+                        <td>{{ contest.title }}</td>
+                        <td>
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="belong_to_contests"
+                                       value="{{ contest.pk }}">
+                                {% for cont in problem.contests.all %}
+                                    {% if cont.id == contest.id %}
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="belong_to_contests"
+                                               value="{{ contest.pk }}"
+                                               checked>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>{{ contest.status }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="row mb-2">
+            <div class="col-sm-12">
+                <button type="submit" class="btn btn-sm btn-primary">確定挑選競賽</button>
+            </div>
+        </div>
+    </form>
+    {% if contests.paginator.num_pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if contests.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page=1"
+                           aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ contests.previous_page_number }}"
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for num in contests.paginator.page_range %}
+                    <li class="page-item {% if contests.number == num %}active{% endif %}">
+                        <a class="page-link"
+                           href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endfor %}
+                {% if contests.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ contests.next_page_number }}"
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ contests.paginator.num_pages }}"
+                           aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+    {% comment %} 測試用 {% endcomment %}
+    <script>
+        window.onload = function() {
+            console.log('{{request.session.prblm_page_num}}');
+        };
+    </script> 
+{% endblock page_content %}
