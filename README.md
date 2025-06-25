@@ -8,9 +8,11 @@
 
 每個模組皆安裝運行在Docker容器(container)內。  
 
-建議使用作業系統是Ubuntu20.02，Ubuntu系統可以安裝運行於Oracle VirtualBox虛擬機內，網路卡設定為"橋接介面卡"，在Ubuntu內設定好公開IP位址，可以進行考試IP管制。
+建議使用作業系統是Ubuntu20.02。
 
 若是使用Windows系統的Docker進行安裝也可以，但是OJ無法進行考試IP管制，其餘功能皆可正常運作。
+
+若使用Windows作業系統，需要進行IP管制，建議將Ubuntu安裝運行於Oracle VirtualBox虛擬機內，網路卡設定為"橋接介面卡"，在Ubuntu內設定好公開IP位址(可與Host不同IP)，就可以進行考試IP管制。
 
 # Judge0: 判題系統
 
