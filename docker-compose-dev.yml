@@ -110,15 +110,15 @@ services:
   oj-web:
     container_name: oj-web
     # 開發階段(若需要修改程式碼)
-    # build: ./oj-web
+    build: ./oj-web
 
     # 部署階段
-    image: clhuang/oj-web:latest
+    # image: clhuang/oj-web:latest
     
     volumes:
       # 開發階段(若需要修改程式碼):置放在本地端的程式碼，修改這裡的程式碼，等於是修改容器內的程式碼，會讓伺服器重新啟動，方便修改與測試
       # 不能置放在本地端的雲端離線的目錄，有權限的問題...
-      #- ./oj-web:/app
+      - ./oj-web:/app
 
       # static files 目的是讓nginx容器可以存取到static files
       - static_volume:/app/staticfiles/
@@ -155,7 +155,7 @@ services:
 
       # 在entrypoint.sh啟動gunicorn伺服器或是啟動Django的伺服器
       # 是否要在entrypoint.sh啟動Django的伺服器python manage.py runserver
-      DEV_SERVER: false  # false:啟動gunicorn伺服器; true:啟動Django的伺服器python manage.py runserver
+      DEV_SERVER: true  # false:啟動gunicorn伺服器; true:啟動Django的伺服器python manage.py runserver
 
     restart: always
     # 這個容器要等到oj-postgres容器啟動完成後才啟動
@@ -169,10 +169,10 @@ services:
     container_name: oj-nginx
 
     # 開發階段:通常這部分的設定很少更動，所以不用build，若有更動，必須build
-    # build: ./nginx
+    build: ./nginx
 
     # 部署階段
-    image: clhuang/oj-nginx:latest
+    # image: clhuang/oj-nginx:latest
 
     ports:
       # 公開IP可以查訪
