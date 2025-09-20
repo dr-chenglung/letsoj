@@ -203,3 +203,9 @@ volumes:
   # This is for nginx and oj-web
   # static_volume:可以將兩處static_volume共用，方便nginx與oj-web存取
   static_volume:
+
+
+# End of docker-compose.yml
+# 參考:
+# 開發階段：設定 DEV_SERVER: true + 啟用 volume mount - ./oj-web:/app 以及使用 build: ./oj-web
+# 生產部署：設定 DEV_SERVER: false + 註解掉 volume mount
