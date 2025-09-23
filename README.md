@@ -27,7 +27,10 @@
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
-docker compose up -d
+docker compose up
+
+或是多個判題容器
+docker compose up --scale workers=3
 
 # 管理者進入OJ系統
 在瀏覽器輸入: localhost或是你的IP  
@@ -70,7 +73,7 @@ DEV_SERVER: true
 程式碼位置在letsoj目錄下:  
 oj-web/
 
-程式碼若有修改，gunicorn會自動重新啟動Django server，方便更新程式碼。
+會啟動python manage.py runserver，此模式下程式碼若有修改，會自動重新啟動oj-web容器，方便更新程式碼。
 
 目前程式碼仍是雛型階段，功能未盡完善，或許存在潛在的Bugs。但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
 
