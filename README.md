@@ -22,14 +22,16 @@
 
 此OJ採用Judge0 Extra CE 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)。若需要其他未包含的程式語言判題，則必須修改程式改成使用Judge0 CE。
 
-備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
+備註:  
+(1) docker compose 建議安裝於Ubuntu20.04以下版本，否則Judge0判題時會發生Internal Error。若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
+(2) Windows WSL2 + Docker desktop，若WSL2是版本6以上，同樣Judge0判題時會發生Internal Error。只要下載版本5，例如:[wsl.2.3.26.0.x64.msi](https://github.com/microsoft/WSL/releases?page=2)或更舊的版本安裝即可運作。
  
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
 docker compose up
 
-或是多個判題容器
+或是多個判題容器:
 docker compose up --scale workers=3
 
 # 管理者進入OJ系統
@@ -62,7 +64,7 @@ oj-postgres-db/postgres
 
 重新啟動容器即可順利使用舊有或移轉的資料庫
 
-可以下載範例資料庫壓縮檔(尚未提供)，解壓縮置放於oj-postgres-db目錄下，啟動後即可快速熟悉OJ所有的功能。
+下載範例資料庫壓縮檔(尚未提供)，解壓縮置放於oj-postgres-db目錄下，啟動後即可快速熟悉OJ所有的功能。
 
 # 開發者程式碼
 
