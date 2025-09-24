@@ -24,14 +24,15 @@
 
 備註:  
 (1) docker compose 建議安裝於Ubuntu20.04以下版本，否則Judge0判題時會發生Internal Error。若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
-(2) Windows WSL2 + Docker desktop，若WSL2是版本6以上，同樣Judge0判題時會發生Internal Error。只要下載版本5，例如:[wsl.2.3.26.0.x64.msi](https://github.com/microsoft/WSL/releases?page=2)或更舊的版本安裝即可運作。
+
+(2) Windows WSL2 + Docker desktop，若WSL2是版本6以上(例如:Linux version 6.6.87.2-microsoft-standard-WSL2)，同樣Judge0判題時會發生Internal Error。只要下載版本5，或更舊的版本安裝即可，例如:[wsl.2.3.26.0.x64.msi](https://github.com/microsoft/WSL/releases?page=2):Linux version 5.15.167.4-microsoft-standard-WSL2
  
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
 docker compose up
 
-或是多個判題容器:
+或是多個判題容器:  
 docker compose up --scale workers=3
 
 # 管理者進入OJ系統
