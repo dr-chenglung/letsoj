@@ -116,9 +116,9 @@ services:
     image: clhuang/oj-web:latest
     
     volumes:
-      # 開發階段(若需要修改程式碼):置放在本地端的程式碼，修改這裡的程式碼，等於是修改容器內的程式碼，會讓伺服器重新啟動，方便修改與測試
+      # 定義程式碼放置的位置，開發階段(若需要修改程式碼):置放在本地端的程式碼，修改這裡的程式碼，等於是修改容器內的程式碼，會讓伺服器重新啟動，方便修改與測試
       # 不能置放在本地端的雲端離線的目錄，有權限的問題...
-      #- ./oj-web:/app
+      - ./oj-web:/app
 
       # static files 目的是讓nginx容器可以存取到static files
       - static_volume:/app/staticfiles/
