@@ -1,13 +1,17 @@
 '''
-import 時你可以指定不同的 contest_id，只要該 contest 已存在於資料庫。
-這樣就會將同一份 contest_export_submissions_{contest_id}.json 和 contest_export_ranks_{contest_id}.json 的內容匯入到你指定的 contest。
-如果你用不同的 contest_id，會將資料匯入到那個 contest 下（但要注意：submission/problem/user 必須存在，否則會報錯）。
+使用範例
+這個程式用來匯出競賽的提交資料和排名資料
 
-簡單來說：
+進入容器
+docker exec -it oj-web bash
 
-你可以用同一份 export 檔案，匯入到不同 contest_id，只要資料庫有該 contest。
-匯入時，所有 submission/contest_rank 都會掛在你指定的 contest_id 下。
+在終端機中執行以下指令 來匯入與匯出競賽資料 例如:contest_id=255
+python 1-export-contest-submission.py 255
+python 2-import-contest-submission.py 255
 
+注意: 
+資料庫必須事先有建立好相同的contest,problems,user否則會失敗
+若submission的id已存在，則會更新該筆資料
 '''
 
 import os

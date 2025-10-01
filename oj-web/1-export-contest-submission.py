@@ -4,7 +4,7 @@
 這個程式用來匯出競賽的提交資料和排名資料
 
 進入容器
-docker exec -it oj_web bash
+docker exec -it oj-web bash
 
 在終端機中執行以下指令 來匯入與匯出競賽資料 例如:contest_id=255
 python 1-export-contest-submission.py 255
