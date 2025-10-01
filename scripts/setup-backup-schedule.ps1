@@ -3,11 +3,13 @@
 # ==========================
 
 # 需要以系統管理員權限執行此腳本
+# powershell -ExecutionPolicy Bypass -File C:\Users\user\Documents\letsoj\scripts\setup-backup-schedule.ps1
+# 或是 .\setup-backup-schedule.ps1 )
 
 # ==========================
 # 可自訂參數設定
 # ==========================
-$scriptPath = "C:\Users\clhuang\Documents\letsoj\scripts\postgres-backup.ps1"
+$scriptPath = "C:\Users\user\Documents\letsoj\scripts\postgres-backup.ps1"
 $backupIntervalMinutes = 15    # 備份間隔時間（分鐘），例如：15, 30, 60
 
 # 可選值說明：
@@ -19,7 +21,8 @@ $backupIntervalMinutes = 15    # 備份間隔時間（分鐘），例如：15, 3
 
 # 任務設定
 $taskName = "PostgreSQL Auto Backup"
-$workingDirectory = "C:\Users\clhuang\Documents\letsoj"
+# 方式 1：使用當前腳本所在目錄 或是 Get-Location $PWD.Path
+$workingDirectory = $PSScriptRoot
 
 # 檢查腳本是否存在
 if (!(Test-Path $scriptPath)) {

@@ -4,7 +4,8 @@
 
 # Windows 上備份存放資料夾
 # 可以放到USB隨身碟等外接裝置 或是Google Drive等雲端同步資料夾
-$backupDir = "C:\Users\clhuang\Documents\letsoj\PostgresBackups"
+$backupDir = "C:\Users\user\Documents\letsoj\PostgresBackups"
+# $backupDir = "G:\PostgresBackups" # 這是我的USB隨身碟
 
 # Docker 容器名稱
 $containerName = "oj-postgres"
