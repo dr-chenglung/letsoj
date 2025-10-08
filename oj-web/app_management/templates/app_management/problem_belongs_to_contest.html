@@ -3,10 +3,39 @@
     考題歸屬
 {% endblock page_title %}
 {% block page_content %}
-    <h3>設定考題歸屬於競賽(只能加入競賽，若需刪除，需選取競賽管理功能。)</h3>
+    <h3>設定考題歸屬於競賽(只能加入競賽，若需移除歸屬競賽，需到競賽管理功能中進行。)</h3>
     <h5>
         考題名稱: <span class="badge bg-info">{{ problem.title }}</span>
     </h5>
+    
+    <!-- 手動輸入競賽編號加入 -->
+    <div class="row mb-3">
+        <div class="col-sm-12">
+            <form action="{% url 'problem_add_to_contests_by_ids' problem.pk %}" method="POST">
+                {% csrf_token %}
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">快速加入競賽</h6>
+                        <div class="mb-2">
+                            <label for="contest_ids_input" class="form-label">
+                                <small>輸入競賽編號（可用空白或逗號隔開，例如: 71 72 73 或 71,72,73）</small>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="contest_ids_input"
+                                   name="contest_ids_input"
+                                   placeholder="例如: 71 72 73"
+                                   style="max-width: 500px;">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-success">
+                            <i class="bi bi-plus-circle"></i> 加入競賽
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <form method="post" action="{% url 'problem_belongs_to' problem.pk %}">
         {% csrf_token %}
         <!-- Hidden inputs for prblm_page_num and selected_categories parameters -->

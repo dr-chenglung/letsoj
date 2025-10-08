@@ -6,8 +6,39 @@
   <div class="container mt-2">
     <h4>考題維護</h4>
     <form method="GET" action="{% url 'problem_list' %}">
-      <button type="submit" class="btn btn-sm btn-primary">過濾題目</button>
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label for="problem_id_search" class="form-label">考題編號搜尋</label>
+          <input type="text"
+                 class="form-control"
+                 id="problem_id_search"
+                 name="problem_id"
+                 placeholder="輸入考題編號"
+                 value="{{ problem_id_search|default:'' }}">
+        </div>
+        <div class="col-md-3">
+          <label for="title_search" class="form-label">題目文字搜尋</label>
+          <input type="text"
+                 class="form-control"
+                 id="title_search"
+                 name="title_search"
+                 placeholder="輸入題目關鍵字"
+                 value="{{ title_search|default:'' }}">
+        </div>
+        <div class="col-md-3">
+          <label for="language_filter" class="form-label">語言選擇</label>
+          <select class="form-select" id="language_filter" name="language_filter">
+            <option value="">全部語言</option>
+            {% for language in languages %}
+              <option value="{{ language.id }}" {% if language_filter == language.id|stringformat:"s" %}selected{% endif %}>
+                {{ language.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
       <div class="mb-3">
+        <label class="form-label">題目主題分類</label>
         <div id="categories">
           <div class="row">
             {% for category in categories %}
@@ -25,6 +56,10 @@
             {% endfor %}
           </div>
         </div>
+      </div>
+      <div class="mb-3">
+        <button type="submit" class="btn btn-primary">過濾題目</button>
+        <a href="{% url 'problem_list' %}" class="btn btn-secondary">搜尋復原</a>
       </div>
     </form>
     <table class="table table-striped">
@@ -72,13 +107,13 @@
               {% comment %} 注意這裡頁次名稱改為 prblm_page_num 避免與problem_belongs_to頁面的 contests paginator 的 page 衝突 {% endcomment %}
               <a type="button"
                  class="btn btn-sm btn-info"
-                 href="{% url 'problem_belongs_to' problem.pk %}?prblm_page_num={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}">+競賽</a>
+                 href="{% url 'problem_belongs_to' problem.pk %}?prblm_page_num={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}">+競賽</a>
               <a type="button"
                  class="btn btn-sm btn-success"
-                 href="{% url 'problem_duplicate' problem.pk %}?page={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}">複製</a>
+                 href="{% url 'problem_duplicate' problem.pk %}?page={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}">複製</a>
               <a type="button"
                  class="btn btn-sm btn-danger delete_this"
-                 href="{% url 'problem_delete' problem.pk %}?page={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}"
+                 href="{% url 'problem_delete' problem.pk %}?page={{ problems.number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}"
                  data-title="{{ problem.title }}">Del</a>
             </td>
           </tr>
@@ -91,14 +126,14 @@
           {% if problems.has_previous %}
             <li class="page-item">
               <a class="page-link"
-                 href="?page=1{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}"
+                 href="?page=1{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}"
                  aria-label="First">
                 <span aria-hidden="true">&laquo;&laquo;</span>
               </a>
             </li>
             <li class="page-item">
               <a class="page-link"
-                 href="?page={{ problems.previous_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}"
+                 href="?page={{ problems.previous_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}"
                  aria-label="Previous">
                 <span aria-hidden="true">&laquo;</span>
               </a>
@@ -107,20 +142,20 @@
           {% for num in problems.paginator.page_range %}
             <li class="page-item {% if problems.number == num %}active{% endif %}">
               <a class="page-link"
-                 href="?page={{ num }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}">{{ num }}</a>
+                 href="?page={{ num }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}">{{ num }}</a>
             </li>
           {% endfor %}
           {% if problems.has_next %}
             <li class="page-item">
               <a class="page-link"
-                 href="?page={{ problems.next_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}"
+                 href="?page={{ problems.next_page_number }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}"
                  aria-label="Next">
                 <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             <li class="page-item">
               <a class="page-link"
-                 href="?page={{ problems.paginator.num_pages }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}"
+                 href="?page={{ problems.paginator.num_pages }}{% for category in selected_categories %}&selected_categories={{ category }}{% endfor %}{% if problem_id_search %}&problem_id={{ problem_id_search }}{% endif %}{% if title_search %}&title_search={{ title_search }}{% endif %}{% if language_filter %}&language_filter={{ language_filter }}{% endif %}"
                  aria-label="Last">
                 <span aria-hidden="true">&raquo;&raquo;</span>
               </a>

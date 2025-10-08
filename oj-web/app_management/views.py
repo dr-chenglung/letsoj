@@ -82,6 +82,34 @@ def problem_list(request):
     # 獲取所有問題並按id降序排序
     problems = Problem.objects.all().order_by("-id")
 
+    # 獲取考題編號搜尋參數
+    problem_id_search = request.GET.get("problem_id", "").strip()
+    
+    # 如果有輸入考題編號，則進行過濾
+    if problem_id_search:
+        try:
+            # 嘗試將輸入轉換為整數並過濾
+            problem_id = int(problem_id_search)
+            problems = problems.filter(id=problem_id)
+        except ValueError:
+            # 如果轉換失敗，則不進行過濾，顯示所有題目
+            pass
+
+    # 獲取題目文字搜尋參數
+    title_search = request.GET.get("title_search", "").strip()
+    if title_search:
+        # 使用 icontains 進行不區分大小寫的模糊搜尋
+        problems = problems.filter(title__icontains=title_search)
+
+    # 獲取語言過濾參數
+    language_filter = request.GET.get("language_filter", "")
+    if language_filter:
+        try:
+            language_id = int(language_filter)
+            problems = problems.filter(language_id=language_id)
+        except ValueError:
+            pass
+
     # 獲取多個類別過濾條件
     # Get selected categories from the request
     selected_categories = request.GET.getlist("selected_categories")
@@ -110,11 +138,16 @@ def problem_list(request):
     # 章節主題清楚分類，可用空白隔開多個，例如:數學運算 判斷 迴圈 亂數 靜態方法 一維陣列 二維陣列 自訂類別 例外 檔案 繼承 抽象類別 介面 資料結構
 
     problem_categories = ProblemCategory.objects.all().order_by("id_seq")
+    languages = Language.objects.all().order_by("name")
 
     context = {
         "categories": problem_categories,
         "problems": paginated_problems,
         "selected_categories": selected_categories,
+        "problem_id_search": problem_id_search,
+        "title_search": title_search,
+        "language_filter": language_filter,
+        "languages": languages,
     }
     # 將分頁後的問題列表傳遞給模板
     return render(request, "app_management/problem_list.html", context)
@@ -406,6 +439,70 @@ def problem_belongs_to(request, pk):
         # logger.info(f"params urlencode: {urlencode(params, doseq=True)}")
         return redirect(f"{reverse('problem_list')}?{urlencode(params, doseq=True)}")
 
+
+@staff_member_required
+def problem_add_to_contests_by_ids(request, pk):
+    """
+    通過手動輸入競賽編號批量將考題加入到多個競賽中
+    支援空白或逗號分隔的競賽編號
+    """
+    if request.method == "POST":
+        problem = get_object_or_404(Problem, pk=pk)
+        contest_ids_input = request.POST.get("contest_ids_input", "").strip()
+        
+        if contest_ids_input:
+            # 支援空白或逗號分隔
+            # 先將逗號替換為空白，然後分割
+            contest_ids_str = contest_ids_input.replace(",", " ").replace("，", " ")
+            contest_ids = contest_ids_str.split()
+            
+            added_count = 0
+            not_found_ids = []
+            already_exists_ids = []
+            
+            for cid in contest_ids:
+                try:
+                    cid = cid.strip()
+                    if not cid:
+                        continue
+                    
+                    contest_id = int(cid)
+                    contest = Contest.objects.get(pk=contest_id)
+                    
+                    # 檢查是否已經存在
+                    contest_problem_exists = ContestProblem.objects.filter(
+                        problem=problem, contest=contest
+                    ).exists()
+                    
+                    if contest_problem_exists:
+                        already_exists_ids.append(str(contest_id))
+                    else:
+                        # 創建新的 ContestProblem
+                        ContestProblem.objects.create(
+                            problem=problem,
+                            contest=contest
+                        )
+                        added_count += 1
+                        
+                except ValueError:
+                    not_found_ids.append(cid)
+                except Contest.DoesNotExist:
+                    not_found_ids.append(cid)
+            
+            # 顯示結果訊息
+            if added_count > 0:
+                messages.success(request, f"成功將考題加入 {added_count} 個競賽中！")
+            if already_exists_ids:
+                messages.warning(request, f"競賽編號 {', '.join(already_exists_ids)} 已包含此考題。")
+            if not_found_ids:
+                messages.error(request, f"找不到競賽編號: {', '.join(not_found_ids)}")
+        else:
+            messages.warning(request, "請輸入競賽編號。")
+    
+    # 重定向回 problem_belongs_to 頁面
+    return redirect("problem_belongs_to", pk=pk)
+
+
 @staff_member_required
 def contest_list_manage(request):
 
@@ -513,6 +610,68 @@ def contest_problems_manage(request, contest_pk):
             contest_problem.delete()
 
         return redirect("contest_problems_manage", contest_pk=contest.pk)
+
+
+@staff_member_required
+def contest_add_problems_by_ids(request, contest_pk):
+    """
+    通過手動輸入考題編號批量加入考題到競賽中
+    支援空白或逗號分隔的考題編號
+    """
+    if request.method == "POST":
+        contest = get_object_or_404(Contest, pk=contest_pk)
+        problem_ids_input = request.POST.get("problem_ids_input", "").strip()
+        
+        if problem_ids_input:
+            # 支援空白或逗號分隔
+            # 先將逗號替換為空白，然後分割
+            problem_ids_str = problem_ids_input.replace(",", " ").replace("，", " ")
+            problem_ids = problem_ids_str.split()
+            
+            added_count = 0
+            not_found_ids = []
+            already_exists_ids = []
+            
+            for pid in problem_ids:
+                try:
+                    pid = pid.strip()
+                    if not pid:
+                        continue
+                    
+                    problem_id = int(pid)
+                    problem = Problem.objects.get(pk=problem_id)
+                    
+                    # 檢查是否已經存在
+                    contest_problem_exists = ContestProblem.objects.filter(
+                        problem=problem, contest=contest
+                    ).exists()
+                    
+                    if contest_problem_exists:
+                        already_exists_ids.append(str(problem_id))
+                    else:
+                        # 創建新的 ContestProblem
+                        ContestProblem.objects.create(
+                            problem=problem,
+                            contest=contest
+                        )
+                        added_count += 1
+                        
+                except ValueError:
+                    not_found_ids.append(pid)
+                except Problem.DoesNotExist:
+                    not_found_ids.append(pid)
+            
+            # 顯示結果訊息
+            if added_count > 0:
+                messages.success(request, f"成功加入 {added_count} 個考題到競賽中！")
+            if already_exists_ids:
+                messages.warning(request, f"考題編號 {', '.join(already_exists_ids)} 已存在於競賽中。")
+            if not_found_ids:
+                messages.error(request, f"找不到考題編號: {', '.join(not_found_ids)}")
+        else:
+            messages.warning(request, "請輸入考題編號。")
+    
+    return redirect("contest_problems_manage", contest_pk=contest_pk)
 
 
 @staff_member_required
@@ -1743,3 +1902,269 @@ def export_problems_to_excel(request):
             problems = paginator.page(paginator.num_pages)
         context = {"problems": problems}
         return render(request, "app_management/export_problems_to_excel.html", context)
+
+
+@staff_member_required
+def student_code_viewer(request):
+    """
+    學生程式碼查閱系統
+    管理者可以選擇學生、競賽、題目來查看學生提交的程式碼
+    """
+    # 獲取所有非管理員的使用者，按班級和帳號排序
+    students = User.objects.filter(is_staff=False).order_by('user_class', 'username')
+    
+    # 獲取所有公開的競賽，按順序排序
+    contests = Contest.objects.filter(is_public=True).order_by('-display_seq')
+    
+    # 初始化變數
+    selected_student_id = request.GET.get('student_id')
+    selected_contest_id = request.GET.get('contest_id')
+    selected_problem_id = request.GET.get('problem_id')
+    
+    selected_student = None
+    selected_contest = None
+    selected_problem = None
+    problems = []
+    submission = None
+    
+    # 如果選擇了競賽，獲取該競賽的題目
+    if selected_contest_id:
+        try:
+            selected_contest = Contest.objects.get(pk=selected_contest_id)
+            # 獲取競賽中的題目
+            contest_problems = ContestProblem.objects.filter(
+                contest=selected_contest
+            ).select_related('problem').order_by('id_prblm_in_contest')
+            problems = [cp.problem for cp in contest_problems]
+        except Contest.DoesNotExist:
+            messages.error(request, "找不到該競賽")
+    
+    # 如果選擇了學生
+    if selected_student_id:
+        try:
+            selected_student = User.objects.get(pk=selected_student_id)
+        except User.DoesNotExist:
+            messages.error(request, "找不到該學生")
+    
+    # 如果選擇了題目
+    if selected_problem_id:
+        try:
+            selected_problem = Problem.objects.get(pk=selected_problem_id)
+        except Problem.DoesNotExist:
+            messages.error(request, "找不到該題目")
+    
+    # 如果三個條件都選擇了，查詢提交記錄
+    if selected_student and selected_contest and selected_problem:
+        try:
+            submission = Submission.objects.get(
+                submitted_by=selected_student,
+                contest=selected_contest,
+                problem=selected_problem
+            )
+        except Submission.DoesNotExist:
+            messages.warning(request, "該學生尚未提交此題目")
+    
+    context = {
+        'students': students,
+        'contests': contests,
+        'problems': problems,
+        'selected_student_id': selected_student_id,
+        'selected_contest_id': selected_contest_id,
+        'selected_problem_id': selected_problem_id,
+        'selected_student': selected_student,
+        'selected_contest': selected_contest,
+        'selected_problem': selected_problem,
+        'submission': submission,
+        'JudgeStatus': JudgeStatus,
+    }
+    
+    return render(request, 'app_management/student_code_viewer.html', context)
+
+
+@staff_member_required
+def export_contest_submissions(request):
+    """
+    匯出競賽的提交記錄和排名資料
+    """
+    export_result = None
+    
+    if request.method == 'POST':
+        action = request.POST.get('action', 'preview')
+        contest_id = request.POST.get('contest_id')
+        
+        try:
+            contest = Contest.objects.get(id=contest_id)
+        except Contest.DoesNotExist:
+            messages.error(request, f'競賽編號 {contest_id} 不存在')
+            return render(request, 'app_management/export_contest_submissions.html')
+        
+        # 匯出 Submission
+        submissions = Submission.objects.filter(contest=contest)
+        submissions_data = []
+        for s in submissions:
+            submissions_data.append({
+                "id": s.id,
+                "submitted_by": s.submitted_by.username,
+                "problem_id": s.problem.id,
+                "source_code": s.source_code,
+                "judge_compile_output": s.judge_compile_output,
+                "judge_status_description": s.judge_status_description,
+                "judge_status": s.judge_status,
+                "submitted_at": s.submitted_at.isoformat(),
+            })
+        
+        # 匯出 ContestRank
+        ranks = ContestRank.objects.filter(contest=contest)
+        ranks_data = []
+        for r in ranks:
+            ranks_data.append({
+                "id": r.id,
+                "submitted_by": r.submitted_by.username,
+                "submission_count": r.submission_count,
+                "accepted_count": r.accepted_count,
+                "total_time": r.total_time,
+                "submission_info": r.submission_info,
+            })
+        
+        # 如果是下載動作
+        if action == 'download':
+            # 建立 ZIP 檔案包含兩個 JSON 檔案
+            import zipfile
+            from io import BytesIO
+            
+            # 創建內存中的 ZIP 檔案
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                # 添加 submissions JSON
+                submissions_json = json.dumps(submissions_data, ensure_ascii=False, indent=2)
+                zip_file.writestr(
+                    f'contest_export_submissions_{contest_id}.json',
+                    submissions_json.encode('utf-8')
+                )
+                
+                # 添加 ranks JSON
+                ranks_json = json.dumps(ranks_data, ensure_ascii=False, indent=2)
+                zip_file.writestr(
+                    f'contest_export_ranks_{contest_id}.json',
+                    ranks_json.encode('utf-8')
+                )
+            
+            # 準備下載回應
+            response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+            response['Content-Disposition'] = f'attachment; filename="contest_{contest_id}_export.zip"'
+            return response
+        
+        # 預覽結果
+        export_result = {
+            'contest': contest,
+            'contest_id': contest_id,
+            'submissions_count': len(submissions_data),
+            'ranks_count': len(ranks_data),
+        }
+        
+        from django.utils.safestring import mark_safe
+        messages.success(
+            request,
+            mark_safe(f'✅ <strong>匯出預覽完成</strong><br>'
+                     f'📋 競賽：{contest.title} (ID: {contest_id})<br>'
+                     f'📝 提交記錄：{len(submissions_data)} 筆<br>'
+                     f'🏆 排名資料：{len(ranks_data)} 筆<br>'
+                     f'<br>請點擊下方「確認下載」按鈕來下載檔案')
+        )
+    
+    context = {'export_result': export_result}
+    return render(request, 'app_management/export_contest_submissions.html', context)
+
+
+@staff_member_required
+def import_contest_submissions(request):
+    """
+    從 JSON 檔案匯入競賽提交記錄和排名資料
+    """
+    if request.method == 'POST':
+        contest_id = request.POST.get('contest_id')
+        submissions_file = request.FILES.get('submissions_file')
+        ranks_file = request.FILES.get('ranks_file')
+        
+        if not contest_id or not submissions_file or not ranks_file:
+            messages.error(request, '請填寫所有必填欄位並上傳檔案')
+            return render(request, 'app_management/import_contest_submissions.html')
+        
+        try:
+            contest = Contest.objects.get(id=contest_id)
+        except Contest.DoesNotExist:
+            messages.error(request, f'競賽編號 {contest_id} 不存在')
+            return render(request, 'app_management/import_contest_submissions.html')
+        
+        try:
+            # 讀取並解析 submissions JSON
+            submissions_data = json.loads(submissions_file.read().decode('utf-8'))
+            
+            # 讀取並解析 ranks JSON
+            ranks_data = json.loads(ranks_file.read().decode('utf-8'))
+            
+            # 匯入 Submission
+            imported_submissions = 0
+            failed_submissions = 0
+            for s in submissions_data:
+                try:
+                    user = User.objects.get(username=s["submitted_by"])
+                    problem = Problem.objects.get(id=s["problem_id"])
+                    obj, created = Submission.objects.update_or_create(
+                        submitted_by=user,
+                        contest=contest,
+                        problem=problem,
+                        defaults={
+                            "source_code": s["source_code"],
+                            "judge_compile_output": s["judge_compile_output"],
+                            "judge_status_description": s["judge_status_description"],
+                            "judge_status": s["judge_status"],
+                            "submitted_at": s["submitted_at"],
+                        }
+                    )
+                    imported_submissions += 1
+                except Exception as e:
+                    failed_submissions += 1
+                    logger.error(f"Failed to import submission: {e}")
+            
+            # 匯入 ContestRank
+            imported_ranks = 0
+            failed_ranks = 0
+            for r in ranks_data:
+                try:
+                    user = User.objects.get(username=r["submitted_by"])
+                    obj, created = ContestRank.objects.update_or_create(
+                        submitted_by=user,
+                        contest=contest,
+                        defaults={
+                            "submission_count": r["submission_count"],
+                            "accepted_count": r["accepted_count"],
+                            "total_time": r["total_time"],
+                            "submission_info": r["submission_info"],
+                        }
+                    )
+                    imported_ranks += 1
+                except Exception as e:
+                    failed_ranks += 1
+                    logger.error(f"Failed to import rank: {e}")
+            
+            # 顯示結果訊息
+            success_msg = f'匯入完成！競賽：{contest.title} (ID: {contest_id})<br>'
+            success_msg += f'提交記錄：成功 {imported_submissions} 筆'
+            if failed_submissions > 0:
+                success_msg += f'，失敗 {failed_submissions} 筆'
+            success_msg += f'<br>排名資料：成功 {imported_ranks} 筆'
+            if failed_ranks > 0:
+                success_msg += f'，失敗 {failed_ranks} 筆'
+            
+            from django.utils.safestring import mark_safe
+            messages.success(request, mark_safe(success_msg))
+            
+        except json.JSONDecodeError:
+            messages.error(request, 'JSON 檔案格式錯誤，請確認檔案內容正確')
+        except Exception as e:
+            messages.error(request, f'匯入失敗：{str(e)}')
+        
+        return render(request, 'app_management/import_contest_submissions.html')
+    
+    return render(request, 'app_management/import_contest_submissions.html')

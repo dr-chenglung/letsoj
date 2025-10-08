@@ -8,11 +8,38 @@
     <h5>
       競賽名稱: <span class="badge bg-info">{{ contest.title }}</span>
     </h5>
-    <div class="row">
+    <div class="row mb-3">
       <div class="col-sm-12">
         <a href="{% url 'contest_owns_problems' contest.pk %}">
-          <button type="submit" class="btn btn-sm btn-primary">挑選新考題</button>
+          <button type="button" class="btn btn-sm btn-primary">挑選新考題</button>
         </a>
+      </div>
+    </div>
+    <!-- 手動輸入題號加入考題 -->
+    <div class="row mb-3">
+      <div class="col-sm-12">
+        <form action="{% url 'contest_add_problems_by_ids' contest.pk %}" method="POST">
+          {% csrf_token %}
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">快速加入考題</h6>
+              <div class="mb-2">
+                <label for="problem_ids_input" class="form-label">
+                  <small>輸入考題編號（可用空白或逗號隔開，例如: 101 102 103 或 101,102,103）</small>
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="problem_ids_input"
+                       name="problem_ids_input"
+                       placeholder="例如: 101 102 103"
+                       style="max-width: 500px;">
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-circle"></i> 加入考題
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>

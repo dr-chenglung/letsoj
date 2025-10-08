@@ -17,19 +17,25 @@
   </div>
   <div class="row mt-5 mb-2">
     <div class="form-check form-switch">
-      <label>只允許以下IP登入</label>
       <input class="form-check-input"
              type="checkbox"
              id="switchLoginIP"
              name="darkmode"
-             value="true" />
+             value="true"
+             style="width: 3rem; height: 1.5rem; cursor: pointer; margin-right: 1rem;" />
+      <label class="fw-bold fs-5" style="color: #ff4757; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(255, 71, 87, 0.3);">
+        <i class="fas fa-exclamation-triangle me-2" style="color: #ff4757;"></i>停止任何人登入(管理者除外)，或只允許以下IP登入
+      </label>
       <input type="text" value="" id="ipranges" class="form-control m-input" />
     </div>
   </div>
   <div class="row mt-2 mb-2">
-    <label class="form-label d-block">*不開放使用者登入:空白不寫任何IP，除了管理之外，任何人都無法登入</label>
+    <label class="form-label d-block">*空白不寫任何IP，除了管理者之外，任何人都無法登入</label>
     <label class="form-label d-block">
-      *只允許在此教室IP登入，其餘IP無法登入，可防止外部代考者，用逗號分隔多個IP，例如:163.18.22.222(可以多組，用逗號分隔)或是一群163.18.22.0/24
+      *只允許在此教室IP登入，其餘IP無法登入，可防止外部代考者。
+    </label>
+    <label class="form-label d-block">
+      *用逗號分隔多個IP，例如:163.18.22.222(可以多組，用逗號分隔)或是一群163.18.22.0/24, 163.18.0.0/16
     </label>
     <label class="form-label d-block">*若有修改IP或新增IP,請再次關閉radio按鈕，再打開，才能立刻生效!</label>
   </div>
@@ -198,10 +204,10 @@
   $("#switchLoginIP").on("change", function () {
     if ($(this).is(":checked")) {
       $(this).attr("value", "True");
-      alert("只有以下特定IP才可登入");
+      alert("只有填入的特定IP才可登入，若沒有填入IP則任何使用者皆不允許登入!");
     } else {
       $(this).attr("value", "False");
-      alert("任何地點的電腦IP都可登入");
+      alert("解除IP管制，任何地點的電腦IP都可登入");
     }
     sendAjaxRequest();
   });

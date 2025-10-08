@@ -22,7 +22,10 @@
       <div class="row mt-2">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
           <div class="container-fluid">
-            <a class="navbar-brand" href="/">LetsOJ</a>
+            <a class="navbar-brand fw-bold" href="/" style="font-size: 1.5rem;">
+              <i class="fas fa-rocket" style="color: #f093fb;"></i>
+              <span style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Lets</span><span style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">OJ</span>
+            </a>
             <button class="navbar-toggler"
                     type="button"
                     data-bs-toggle="collapse"
@@ -35,46 +38,66 @@
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
               <ul class="navbar-nav">
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'contest_list' %}">繳交作業或參加競賽</a>
+                  <a class="nav-link" href="{% url 'contest_list' %}">
+                    <i class="fas fa-tasks" style="color: #f093fb;"></i> 繳交作業或參加競賽
+                  </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'user_contests_summary' %}">我的積分</a>
+                  <a class="nav-link" href="{% url 'user_contests_summary' %}">
+                    <i class="fas fa-chart-line" style="color: #43e97b;"></i> 我的積分
+                  </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'oj_about' %}">使用說明</a>
+                  <a class="nav-link" href="{% url 'oj_about' %}">
+                    <i class="fas fa-question-circle" style="color: #4facfe;"></i> 使用說明
+                  </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="{% url 'learning_map' %}">程式學習地圖</a>
+                  <a class="nav-link" href="{% url 'learning_map' %}">
+                    <i class="fas fa-map" style="color: #fa709a;"></i> 程式學習地圖
+                  </a>
                 </li>
                 {% if user.is_staff %}
                   <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home_management' %}" target='_blank'>到管理者首頁</a>
+                    <a class="nav-link" href="{% url 'home_management' %}" target='_blank'>
+                      <i class="fas fa-user-shield" style="color: #667eea;"></i> 到管理者首頁
+                    </a>
                   </li>
                 {% endif %}
               </ul>
               <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
-                  <li class="nav-item">
-                  <span class="me-2"><i class="fas fa-user-graduate" style="font-size: 20px; color: #7a67ee"></i>
-                {{ user.full_name|title }}</span>
-                <a class="btn btn-sm btn-outline-success"
-                   href="{% url 'custom_change_password' %}"
-                   role="button">修改密碼</a>
-                <a class="btn btn-sm btn-outline-success"
-                   href="{% url 'logout' %}"
-                   role="button">登出</a>
-              </li>
-            {% else %}
-              <li class="nav-item">
-                <a class="btn btn-sm btn-outline-primary"
-                   href="{% url 'user_login' %}"
-                   role="button">登入</a>
-                <a class="btn btn-sm btn-outline-success"
-                   href="{% url 'user_register' %}"
-                   role="button">註冊</a>
-              </li>
-            {% endif %}
-          </ul>
+                  <li class="nav-item d-flex align-items-center">
+                    <span class="me-3" style="padding: 5px 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; color: white; font-weight: 500;">
+                      <i class="fas fa-user-graduate me-2" style="font-size: 18px;"></i>
+                      {{ user.full_name|title }}
+                    </span>
+                    <a class="btn btn-sm btn-outline-warning me-2"
+                       href="{% url 'custom_change_password' %}"
+                       role="button">
+                      <i class="fas fa-key me-1"></i>修改密碼
+                    </a>
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="{% url 'logout' %}"
+                       role="button">
+                      <i class="fas fa-sign-out-alt me-1"></i>登出
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="nav-item d-flex align-items-center">
+                    <a class="btn btn-sm btn-outline-primary me-2"
+                       href="{% url 'user_login' %}"
+                       role="button">
+                      <i class="fas fa-sign-in-alt me-1"></i>登入
+                    </a>
+                    <a class="btn btn-sm btn-outline-success"
+                       href="{% url 'user_register' %}"
+                       role="button">
+                      <i class="fas fa-user-plus me-1"></i>註冊
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
         </div>
       </div>
     </nav>

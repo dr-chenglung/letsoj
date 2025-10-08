@@ -722,7 +722,10 @@ def user_contests_summary(request):
         )
 
         # 計算得分數
-        score = math.ceil(100 * (rank.accepted_count / contest_problems_count))
+        if contest_problems_count > 0:
+            score = math.ceil(100 * (rank.accepted_count / contest_problems_count))
+        else:
+            score = 0  # 如果比賽沒有題目，得分為0
 
         user_rank = None
         average_time = 0
