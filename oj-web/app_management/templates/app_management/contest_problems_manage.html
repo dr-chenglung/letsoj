@@ -1,0 +1,112 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  競賽考題維護
+{% endblock page_title %}
+{% block page_content %}
+  <div class="col-12 mt-2">
+    <h3>競賽考題維護</h3>
+    <h5>
+      競賽名稱: <span class="badge bg-info">(ID編號{{contest.pk}}): {{ contest.title }}</span>
+    </h5>
+    <div class="row mb-3">
+      <div class="col-sm-12">
+        <a href="{% url 'contest_owns_problems' contest.pk %}">
+          <button type="button" class="btn btn-sm btn-primary">挑選新考題</button>
+        </a>
+      </div>
+    </div>
+    <!-- 手動輸入題號加入考題 -->
+    <div class="row mb-3">
+      <div class="col-sm-12">
+        <form action="{% url 'contest_add_problems_by_ids' contest.pk %}" method="POST">
+          {% csrf_token %}
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">快速加入考題</h6>
+              <div class="mb-2">
+                <label for="problem_ids_input" class="form-label">
+                  <small>輸入考題編號（可用空白或逗號隔開，例如: 101 102 103 或 101,102,103）</small>
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="problem_ids_input"
+                       name="problem_ids_input"
+                       placeholder="例如: 101 102 103"
+                       style="max-width: 500px;">
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-circle"></i> 加入考題
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <form action="{% url 'contest_problems_manage' contest.pk %}" method="POST">
+      {% csrf_token %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">id</th>
+            <th scope="col">題號順序q01,q02,</th>
+            <th scope="col">標題 (管理者提交測試)</th>
+            <th scope="col">題目主題</th>
+            <th scope="col">勾選移除</th>
+            <th scope="col">修改</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contestProblem in contest_problems %}
+            <tr>
+              <td>{{ contestProblem.problem.id }}</td>
+              <td>
+                <input type="text"
+                       class="form-control"
+                       name="new_ids_for_problem_in_contest"
+                       value="{{ contestProblem.id_prblm_in_contest }}" />
+                <input type="hidden"
+                       class="form-control"
+                       name="problem_ids_to_be_modified"
+                       value="{{ contestProblem.problem.pk }}" />
+              </td>
+              <td>
+                <a href="{% url 'problem_submit' contestProblem.problem.pk %}">{{ contestProblem.problem.title }}</a>
+              </td>
+              <td>
+                <small>
+                  {% for category in contestProblem.problem.categories.all %}
+                    {{ category.name }}
+                    {% if not forloop.last %},{% endif %}
+                  {% empty %}未分類
+                  {% endfor %}
+                </small>
+              </td>
+              <td>
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         name="removed_from_contest"
+                         value="{{ contestProblem.problem.pk }}" />
+                </div>
+              </td>
+              <td>
+                <a type="button"
+                   class="btn btn-sm btn-warning"
+                   href="{% url 'problem_update' contestProblem.problem.pk %}">修改</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="row">
+        <div class="col-sm-6">
+          <button type="submit" class="btn btn-sm btn-primary">確定修改編號與移除隸屬</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock page_content %}
+{% block script_block %}
+{% endblock script_block %}

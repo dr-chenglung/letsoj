@@ -5,7 +5,7 @@
 {% block page_content %}
   <div class="mt-3">
     <h4 class="text-primary">{{ contest.title }}</h4>
-    <label mt-2 mb-2>{{ contest.description }}</label>
+    <label mt-2 mb-2>{{ contest.description|linebreaks|safe }}</label>
   </div>
   <div class="mt-3">
     <table class="table table-sm table-striped">

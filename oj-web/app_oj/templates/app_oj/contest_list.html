@@ -18,7 +18,11 @@
       {% for contest in contests %}
         <tr>
           <td>
-            <a href="{% url 'contest_detail'  contest.pk %}">{{ contest.title }}</a>
+            {% if request.user.is_staff or contest.status != "NOT_STARTED" %}
+              <a href="{% url 'contest_detail'  contest.pk %}">{{ contest.title }}</a>
+            {% else %}
+              <span class="text-muted">{{ contest.title }}</span>
+            {% endif %}
           </td>
           <td>
             {% if contest.status == "NOT_STARTED" %}
@@ -40,7 +44,11 @@
             <label class="badge bg-danger rounded">{{ contest.end_time|time:"H:i" }}</label>
           </td>
           <td>
-            <a href="{% url 'get_contest_ranking'  contest.id %}"><span class="badge bg-warning rounded-pill">R</span></a>
+            {% if request.user.is_staff or contest.status != "NOT_STARTED" %}
+              <a href="{% url 'get_contest_ranking'  contest.id %}"><span class="badge bg-warning rounded-pill">R</span></a>
+            {% else %}
+              <span class="badge bg-secondary rounded-pill">R</span>
+            {% endif %}
           </td>
         </tr>
       {% endfor %}

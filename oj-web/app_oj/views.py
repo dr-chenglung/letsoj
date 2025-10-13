@@ -198,13 +198,13 @@ def contest_problem_submit(request, contest_pk, problem_pk):
 
     # 此版本在後端渲染，比在前端渲染快速，但是須設定```區域的格式: fenced_code 與 顏色codehilite顯示
     contest_problem.problem.description = markdown.markdown(
-        contest_problem.problem.description, extensions=["fenced_code", "codehilite"]
+        contest_problem.problem.description, extensions=["fenced_code", "codehilite", "tables"]
     )
     # logger.info( contest_problem.problem.description )
 
     contest_problem.problem.input_output_description = markdown.markdown(
         contest_problem.problem.input_output_description,
-        extensions=["fenced_code", "codehilite"],
+        extensions=["fenced_code", "codehilite", "tables"],
     )
 
     context = {
@@ -361,14 +361,15 @@ def submit_to_judger(request):
         # logger.info("已經有submission過了")
         
         # 雖已經提交接受過了，仍讓使用者可以再次提交更完美的程式碼版本-->不再使用此功能了!
-        # 提交按鈕已經在前端有管制，若已經提交過，則按鈕disabled，此處不必再次檢查，因為一定是新的或是尚未Accepted的情況 
         # 這裡的寫法是為了因應這種情況: Accepted之後，仍可以提交多次，但是只有最後一次的結果會被記錄，會影響排名
         # 前端已經有管制:<button type="button" id="submitMyCode" class="btn btn-primary" {% if contest.status == "ENDED" or submission.judge_status_description == "Accepted" %}disabled{% endif %}>提交程式碼...</button>
-        # 讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
-        # if submission.judge_status == JudgeStatus.ACCEPTED and not request.user.is_staff:
-        #     judge_response_info["result_status"] = "Accepted"
-        #     judge_response_info["judge_status_description"] = "已經Accepted，別再送了!"
-        #     return JsonResponse(judge_response_info)
+        # 提交按鈕已經在前端有管制，若已經提交過，則按鈕disabled，此處不必再次檢查，因為一定是新的或是尚未Accepted的情況 ==>仍要檢查，因為前端可破解按鈕可用狀態
+
+        # 若前端按鈕遭惡意設定為可用，這裡檢查可以阻擋掉。另外，為了讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
+        if submission.judge_status == JudgeStatus.ACCEPTED and not request.user.is_staff:
+            judge_response_info["result_status"] = "Accepted"
+            judge_response_info["judge_status_description"] = "已經Accepted，別再送了!"
+            return JsonResponse(judge_response_info)
         
         # 若已經有提交過，但是尚未Accepted，則更新提交時間與程式碼，繼續進行後面的提交程序
         # 記錄時間與程式碼
@@ -621,6 +622,8 @@ from collections import Counter
 
 @login_required(login_url="user_login")
 def get_contest_ranking(request, contest_id):
+    
+    
     contest = Contest.objects.get(pk=contest_id)
 
     # 如果競賽還沒開始或是不公開就不可以查看，必須檢查! 否則有安全疑慮

@@ -53,7 +53,7 @@
       <h5>輸入輸出範例</h5>
       <div class="card">
         <div class="card-body">
-          <div id="input_output_description">{{ contest_problem.problem.input_output_description|safe }}</div>
+          <div class="form-control">{{ contest_problem.problem.input_output_description|safe }}</div>
         </div>
       </div>
     </div>
@@ -116,6 +116,31 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
 
+  <!-- For Bootstrap 的表格樣式 to render tabel in problem description -->
+  <style>
+    div.form-control table {
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      color: #212529;
+      background-color: #fff;
+      border: 1px solid #dee2e6;
+    }
+    div.form-control table th,
+    div.form-control table td {
+      padding: 0.25rem;
+      vertical-align: top;
+      border: 1px solid #dee2e6;
+    }
+    div.form-control table thead th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #dee2e6;
+      background-color: #f8f9fa;
+    }
+    div.form-control table tbody + tbody {
+      border-top: 2px solid #dee2e6;
+    }
+  </style>
+
 {% endblock link_css %}
 {% block script_block %}
   <!-- marked.js 後端已經渲染，不在前端渲染 
@@ -145,6 +170,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
 
+
+  
   <script>
  
     var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
@@ -192,6 +219,12 @@
 
   <script>
     button_ready_submission();
+    
+    // 頁面加載時檢查是否已經Accepted，如果是則禁用按鈕
+    {% if submission and submission.judge_status_description == "Accepted" %}
+      $("#submitMyCode").prop("disabled", true);
+    {% endif %}
+    
     function button_after_submission() {
       document.getElementById("mySpinner").style.display = "block";
       document.getElementById("submitMyCode").style.display = "none";
@@ -234,6 +267,14 @@
       success: function (response) {
         //如果已經接受或過期或尚未開始，則返回-->在前面已經處理，按鈕無法點擊，此處可以不處理
         if ((response.result_status === "Expired") || (response.result_status === "Accepted") || (response.result_status === "NotYetStart") ){
+          button_ready_submission();  // 隱藏spinner
+          if (response.result_status === "Accepted") {
+            alert("已經Accepted，別再送了!");
+          } else if (response.result_status === "Expired") {
+            alert("比賽已經結束!");
+          } else if (response.result_status === "NotYetStart") {
+            alert("比賽尚未開始!");
+          }
           return;
         } else if (response.result_status === "SubmittingToJudgerOK") {
           //回傳結果若為"SubmittingToJudgerOK"，則依據task_token去向後端要結果
@@ -301,6 +342,8 @@
                     if (statusDiscription == "Accepted")
                     {
                       $("#compile_output").append("~給你按個讚!~");
+                      // 動態禁用提交按鈕
+                      $("#submitMyCode").prop("disabled", true);
                     }
 
                     button_ready_submission();

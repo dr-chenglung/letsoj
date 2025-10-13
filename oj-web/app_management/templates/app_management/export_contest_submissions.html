@@ -1,0 +1,155 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  競賽提交匯出
+{% endblock page_title %}
+{% block page_content %}
+  <div class="row mt-3 mb-4">
+    <div class="col-12">
+      <h3>
+        <i class="fas fa-file-export me-2" style="color: #fa709a;"></i>競賽提交匯出
+      </h3>
+      <p class="text-muted">匯出指定競賽的所有提交記錄和排名資料為 JSON 檔案</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-download me-2"></i>選擇要匯出的競賽
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="post" id="exportForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="preview">
+            <div class="mb-3">
+              <label for="contest_id" class="form-label fw-bold">
+                <i class="fas fa-trophy me-2" style="color: #feca57;"></i>競賽編號 (Contest ID)
+              </label>
+              <input type="number" 
+                     class="form-control form-control-lg" 
+                     id="contest_id" 
+                     name="contest_id" 
+                     required
+                     {% if export_result %}value="{{ export_result.contest_id }}"{% endif %}
+                     placeholder="請輸入競賽編號，例如：71">
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>請輸入要匯出的競賽編號
+              </div>
+            </div>
+
+            <div class="card border-info mb-3">
+              <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-lightbulb me-2"></i>匯出說明
+                </h6>
+              </div>
+              <div class="card-body">
+                <ul class="mb-0">
+                  <li>匯出檔案將包含：
+                    <ul>
+                      <li><code>contest_export_submissions_{競賽編號}.json</code> - 所有提交記錄</li>
+                      <li><code>contest_export_ranks_{競賽編號}.json</code> - 競賽排名資料</li>
+                    </ul>
+                  </li>
+                  <li>匯出的資料包含：提交者、題目、程式碼、評測結果、提交時間等完整資訊</li>
+                  <li>檔案會自動下載到瀏覽器的預設下載資料夾</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              {% if not export_result %}
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-search me-2"></i>預覽匯出資料
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-primary btn-lg" formaction="{% url 'export_contest_submissions' %}" onclick="this.form.action.value='download';">
+                  <i class="fas fa-download me-2"></i>確認下載 ZIP 檔案
+                </button>
+                <button type="submit" class="btn btn-secondary btn-lg">
+                  <i class="fas fa-search me-2"></i>重新預覽
+                </button>
+              {% endif %}
+            </div>
+          </form>
+
+          {% if export_result %}
+            <form method="post" id="downloadForm" style="display: inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="download">
+              <input type="hidden" name="contest_id" value="{{ export_result.contest_id }}">
+            </form>
+            <script>
+              document.querySelector('button[onclick*="download"]').onclick = function(e) {
+                e.preventDefault();
+                document.getElementById('downloadForm').submit();
+              };
+            </script>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-warning">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>注意事項
+          </h6>
+        </div>
+        <div class="card-body">
+          <ul class="small mb-0">
+            <li class="mb-2">
+              <i class="fas fa-check text-success me-1"></i>確認競賽編號正確
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check text-success me-1"></i>競賽必須存在於資料庫
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check text-success me-1"></i>匯出的 JSON 檔案可用於資料備份或遷移
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-check text-success me-1"></i>檔案名稱包含競賽編號便於識別
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-info mt-3">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0">
+            <i class="fas fa-question-circle me-2"></i>常見問題
+          </h6>
+        </div>
+        <div class="card-body small">
+          <p><strong>Q: 如何找到競賽編號？</strong></p>
+          <p>A: 到「競賽維護」頁面查看競賽列表，編號在第一欄。</p>
+          
+          <p class="mt-2"><strong>Q: 匯出需要多久？</strong></p>
+          <p>A: 依提交數量而定，通常幾秒內完成。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="row mt-3">
+      <div class="col-12">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible persistent-alert" role="alert">
+            {% if message.tags == 'success' %}
+              <i class="fas fa-check-circle me-2"></i>
+            {% else %}
+              <i class="fas fa-exclamation-triangle me-2"></i>
+            {% endif %}
+            {{ message|safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock page_content %}
