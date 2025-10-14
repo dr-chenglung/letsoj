@@ -566,6 +566,13 @@ def contest_list_manage(request):
         for keyword in keywords:
             contests = contests.filter(title__icontains=keyword)
 
+    # Filter by display_seq
+    display_seq_filter = request.GET.get("display_seq_filter", "").strip()
+    if display_seq_filter:
+        keywords = display_seq_filter.split()
+        for keyword in keywords:
+            contests = contests.filter(display_seq__icontains=keyword)
+
     page = request.GET.get("page", 1)
 
     paginator = Paginator(contests, 10)
@@ -584,6 +591,7 @@ def contest_list_manage(request):
         "contest_status_filter": contest_status_filter,
         "contest_id_filter": contest_id_filter,
         "title_filter": title_filter,
+        "display_seq_filter": display_seq_filter,
     }
     return render(request, "app_management/contest_list_manage.html", response)
 
@@ -798,6 +806,7 @@ def contest_update(request, pk):
         )
         request.session["contest_id_filter"] = request.GET.get("contest_id_filter") or ""
         request.session["title_filter"] = request.GET.get("title_filter") or ""
+        request.session["display_seq_filter"] = request.GET.get("display_seq_filter") or ""
         request.session["page"] = request.GET.get("page", 1)
 
         return render(
@@ -849,6 +858,7 @@ def contest_update(request, pk):
         contest_status_filter = request.session.get("contest_status_filter") or ""
         contest_id_filter = request.session.get("contest_id_filter") or ""
         title_filter = request.session.get("title_filter") or ""
+        display_seq_filter = request.session.get("display_seq_filter") or ""
 
         # 回到原本的頁面需要的參數
         contest_list_filters = QueryDict(mutable=True)
@@ -858,6 +868,7 @@ def contest_update(request, pk):
         contest_list_filters["contest_status_filter"] = contest_status_filter
         contest_list_filters["contest_id_filter"] = contest_id_filter
         contest_list_filters["title_filter"] = title_filter
+        contest_list_filters["display_seq_filter"] = display_seq_filter
 
         redirect_url = (
             f"{reverse('contest_list_manage')}?{contest_list_filters.urlencode()}"
