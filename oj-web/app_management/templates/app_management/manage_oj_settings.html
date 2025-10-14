@@ -5,14 +5,14 @@
 {% block page_content %}
   <div class="row mt-2 mb-5">
     <h3>系統設定與上機考試管理(System Settings and Conntest Management)</h3>
-    <label>實體上機考時，必須設定以下管制。考試考完記得恢復原始設定。</label>
+    <label>實體上機考時，必須設定以下管制(建議可以全部開啟)。考試考完記得恢復原始設定。</label>
   </div>
   <div class="row mb-2">
     <label class="form-label d-block">*上機考開始前務必要做一次清掃！讓考生在他處已經有的登入失效。若使用者密碼事先有被修改,那麼他之前的登入也會自動失效。</label>
     <div class="d-flex">
       <button type="submit"
               id="btn_delete_sessions"
-              class="btn btn-sm btn-danger me-2">-->讓所有考生先前的登入失效(做一次就好)</button>
+              class="btn btn-sm btn-danger me-2">-->清理Session紀錄，讓所有考生先前的登入失效(做一次即可，若有變更密碼可不必清理)</button>
     </div>
   </div>
   <div class="row mt-5 mb-2">
@@ -26,8 +26,8 @@
       <label class="fw-bold fs-5" style="color: #ff4757; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(255, 71, 87, 0.3);">
         <i class="fas fa-exclamation-triangle me-2" style="color: #ff4757;"></i>停止任何人登入(管理者除外)，或只允許以下IP登入
       </label>
-      <input type="text" value="" id="ipranges" class="form-control m-input" />
     </div>
+    <input type="text" value="" id="ipranges" class="form-control m-input mt-2" />
   </div>
   <div class="row mt-2 mb-2">
     <label class="form-label d-block">*空白不寫任何IP，除了管理者之外，任何人都無法登入</label>
@@ -38,6 +38,9 @@
       *用逗號分隔多個IP，例如:163.18.22.222(可以多組，用逗號分隔)或是一群163.18.22.0/24, 163.18.0.0/16
     </label>
     <label class="form-label d-block">*若有修改IP或新增IP,請再次關閉radio按鈕，再打開，才能立刻生效!</label>
+  </div>
+  <div class="row mt-2 mb-2">
+    <label class="form-label d-block">*微軟Docker Desktop的預設IP:172.18.0.1無法管制IP</label>
   </div>
   <div class="row mt-2 mb-2">
     <label class="form-label d-block">*電腦教室若有電腦故障不夠用,可事先請最優秀的幾位學生用自己的筆電來應考,替他開放IP,可在'被拒絕IP的考生'中查看其IP</label>
@@ -58,7 +61,7 @@
              id="switchHideSubmittedCode"
              name="darkmode"
              value="true" />
-      <label class="form-check-label">競賽尚未結束，隱藏提交的程式碼(帳號洩漏給他人，也看不到提交的答案)</label>
+      <label class="form-check-label">競賽尚未結束，不顯示已經提交成功的程式碼，提交不成功的程式碼仍會顯示。(帳號洩漏給他人，也看不到提交的已接受答案)</label>
     </div>
     <div class="form-check form-switch">
       <input class="form-check-input"
@@ -91,7 +94,7 @@
   <div class="col-lg-6 mb-2">
     <div class="card">
       <div class="card-header">
-        <h3 class="h6 text-uppercase mb-0">被拒絕IP的考生</h3>
+        <h3 class="h6 text-uppercase mb-0">被拒絕IP的考生(開啟IP管制才會顯示)</h3>
       </div>
       <div class="card-body">
         <div class="row">
@@ -105,7 +108,7 @@
   <div class="col-lg-6 mb-2">
     <div class="card">
       <div class="card-header">
-        <h3 class="h6 text-uppercase mb-0">有多次登入的考生</h3>
+        <h3 class="h6 text-uppercase mb-0">有多次登入的考生(實體考試時須查詢是否有代考的情況)</h3>
       </div>
       <div class="card-body">
         <div class="row">
