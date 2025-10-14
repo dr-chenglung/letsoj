@@ -7,38 +7,35 @@
         <h3>競賽維護管理</h3>
         <form method="get" action="{% url 'contest_list_manage' %}" class="mb-3">
             <div class="row align-items-end">
-                <div class="col-md-2">
-                    <div class="form-check">
-                        <input class="form-check-input"
-                               type="checkbox"
-                               name="public_contest_filter"
-                               value="true"
-                               id="public_contest_filter"
-                               {% if public_contest_filter == 'true' %}checked{% endif %}>
-                        <label class="form-check-label" for="public_contest_filter">挑選公開</label>
-                    </div>
+                <div class="col-md-1">
+                    <label for="public_contest_filter">挑選公開:</label><br>
+                    <input type="checkbox" name="public_contest_filter" value="true" id="public_contest_filter" {% if public_contest_filter == 'true' %}checked{% endif %} style="transform: scale(1.5);">
                 </div>
-                <div class="col-md-2">
-                    {% comment %} <label for="contestStatusFilter" class="form-label">Contest Status:</label> {% endcomment %}
+                <div class="col-md-1">
+                    <label for="contestStatusFilter" class="form-label">競賽狀態:</label>
                     <select class="form-select"
                             name="contest_status_filter"
                             id="contestStatusFilter">
-                        <option value="">全部競賽狀態</option>
+                        <option value="">全部</option>
                         {% for status, display in ContestStatus.choices %}
                             <option value="{{ status }}"
                                     {% if contest_status_filter == status %}selected{% endif %}>{{ display }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label for="contest_id_filter" class="form-label">競賽編號:</label>
-                    <input type="text" class="form-control" name="contest_id_filter" id="contest_id_filter" value="{{ contest_id_filter|default:'' }}" placeholder="輸入競賽編號">
+                    <input type="text" class="form-control" name="contest_id_filter" id="contest_id_filter" value="{{ contest_id_filter|default:'' }}" placeholder="編號">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="title_filter" class="form-label">標題查詢:</label>
-                    <input type="text" class="form-control" name="title_filter" id="title_filter" value="{{ title_filter|default:'' }}" placeholder="輸入競賽標題關鍵字 (空白分隔)">
+                    <input type="text" class="form-control" name="title_filter" id="title_filter" value="{{ title_filter|default:'' }}" placeholder="關鍵字(空白分隔)">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label for="display_seq_filter" class="form-label">顯示順序查詢:</label>
+                    <input type="text" class="form-control" name="display_seq_filter" id="display_seq_filter" value="{{ display_seq_filter|default:'' }}" placeholder="關鍵字">
+                </div>
+                <div class="col-md-2">
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">篩選</button>
                         <a href="{% url 'contest_list_manage' %}" class="btn btn-secondary">復原</a>
@@ -112,19 +109,19 @@
                         <td>
                             <a type="button"
                                class="btn btn-sm btn-warning"
-                               href="{% url 'contest_update' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}">修改</a>
+                               href="{% url 'contest_update' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}">修改</a>
                             <a type="button"
                                class="btn btn-sm btn-info"
                                href="{% url 'contest_problems_manage' contest.pk %}">+🖉題目</a>
                             <a type="button"
                                class="btn btn-sm btn-success"
-                               href="{% url 'contest_duplicate' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}">複製</a>
+                               href="{% url 'contest_duplicate' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}">複製</a>
                             <a type="button"
                                class="btn btn-sm btn-primary download_ranking"
                                href="{% url 'ranking_download' contest.pk %}">排名↓</a>
                             <a type="button"
                                class="btn btn-sm btn-danger delete_this"
-                               href="{% url 'contest_delete' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}"
+                               href="{% url 'contest_delete' contest.pk %}?page={{ contests.number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}"
                                data-title="{{ contest.title }}">刪除</a>
                         </td>
                     </tr>
@@ -137,14 +134,14 @@
                     {% if contests.has_previous %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page=1{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}"
+                               href="?page=1{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}"
                                aria-label="First">
                                 <span aria-hidden="true">&laquo;&laquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page={{ contests.previous_page_number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}"
+                               href="?page={{ contests.previous_page_number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}"
                                aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
@@ -158,21 +155,21 @@
                         {% else %}
                             <li class="page-item">
                                 <a class="page-link"
-                                   href="?page={{ i }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}">{{ i }}</a>
+                                   href="?page={{ i }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}">{{ i }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
                     {% if contests.has_next %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page={{ contests.next_page_number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}"
+                               href="?page={{ contests.next_page_number }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}"
                                aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page={{ contests.paginator.num_pages }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}"
+                               href="?page={{ contests.paginator.num_pages }}{% if public_contest_filter %}&public_contest_filter={{ public_contest_filter }}{% endif %}{% if contest_status_filter %}&contest_status_filter={{ contest_status_filter }}{% endif %}{% if contest_id_filter %}&contest_id_filter={{ contest_id_filter }}{% endif %}{% if title_filter %}&title_filter={{ title_filter }}{% endif %}{% if display_seq_filter %}&display_seq_filter={{ display_seq_filter }}{% endif %}"
                                aria-label="Last">
                                 <span aria-hidden="true">&raquo;&raquo;</span>
                             </a>
