@@ -1,0 +1,106 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}
+  競賽列表
+{% endblock page_title %}
+{% block page_content %}
+  <h3 class="text-primary">競賽列表Contest List</h3>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th scope="col">競賽名稱</th>
+        <th scope="col">競賽狀態</th>
+        <th scope="col">開始時間</th>
+        <th scope="col">結束時間</th>
+        <th scope="col">看排名</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for contest in contests %}
+        <tr>
+          <td>
+            {% if request.user.is_staff or contest.status != "NOT_STARTED" %}
+              <a href="{% url 'contest_detail'  contest.pk %}">{{ contest.title }}</a>
+            {% else %}
+              <span class="text-muted">{{ contest.title }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if contest.status == "NOT_STARTED" %}
+              <span class="badge bg-secondary">{{ contest.status_label }}</span>
+            {% elif contest.status == "ENDED" %}
+              <span class="badge bg-success">{{ contest.status_label }}</span>
+            {% elif contest.status == "UNDERWAY" %}
+              <span class="badge bg-danger">{{ contest.status_label }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <label class="badge text-dark rounded">{{ contest.start_time|date:"Y-m-d" }}</label>
+            <label class="badge bg-info rounded d-none d-md-table-cell">{{ contest.start_time|date:"D" }}</label>
+            <label class="badge text-dark rounded">{{ contest.start_time|time:"H:i" }}</label>
+          </td>
+          <td>
+            <label class="badge text-dark rounded">{{ contest.end_time|date:"Y-m-d" }}</label>
+            <label class="badge bg-info rounded d-none d-md-table-cell">{{ contest.end_time|date:"D" }}</label>
+            <label class="badge bg-danger rounded">{{ contest.end_time|time:"H:i" }}</label>
+          </td>
+          <td>
+            {% if request.user.is_staff or contest.status != "NOT_STARTED" %}
+              <a href="{% url 'get_contest_ranking'  contest.id %}"><span class="badge bg-warning rounded-pill">R</span></a>
+            {% else %}
+              <span class="badge bg-secondary rounded-pill">R</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if contests.paginator.num_pages > 1 %}
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        {% if contests.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1" aria-label="First">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ contests.previous_page_number }}"
+               aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% endif %}
+        {% for i in contests.paginator.page_range %}
+          {% if contests.number == i %}
+            <li class="page-item active">
+              <span class="page-link">{{ i }}</span>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        {% if contests.has_next %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ contests.next_page_number }}"
+               aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ contests.paginator.num_pages }}"
+               aria-label="Last">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock page_content %}
+{% block script_block %}
+{% endblock script_block %}

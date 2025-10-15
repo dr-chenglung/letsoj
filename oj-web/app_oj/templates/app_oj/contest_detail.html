@@ -1,0 +1,132 @@
+{% extends "app_oj/base.html" %}
+{% load static %}
+{% block page_title %}
+  競賽考題
+{% endblock page_title %}
+{% block page_content %}
+  <div class="mt-3">
+    <h4 class="text-primary">{{ contest.title }}</h4>
+    <label mt-2 mb-2>{{ contest.description|linebreaks|safe }}</label>
+  </div>
+  <div class="mt-3">
+    <table class="table table-sm table-striped">
+      <thead>
+        <tr>
+          <th scope="col">倒數計時</th>
+          <th scope="col">結束時間</th>
+          <th scope="col">看排名</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+              <span id="countDownTimer" class="badge bg-info rounded-pill"></span>
+          </td>
+          <td>
+            <label class="badge text-dark rounded">{{ contest.end_time|date:"Y-m-d" }}</label>
+            <label class="badge bg-info rounded">{{ contest.end_time|date:"D" }}</label>  
+            <label class="badge bg-danger rounded"> {{ contest.end_time|time:"H:i" }}</label>
+          </td>
+          <td>
+            <a href="{% url 'get_contest_ranking'  contest.id %}"><span class="badge bg-warning rounded-pill">Rank</span></a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-2">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">題號</th>
+          <th scope="col">標題</th>
+          <th scope="col">題目主題</th>
+          <th scope="col">提交狀態</th>
+        </tr>
+        
+      </thead>
+      <tbody>
+        {% for contestProblem in contest_problems %}
+          <tr>
+            <td>{{ contestProblem.id_prblm_in_contest }}</td>
+            <td>
+              <a href="{% url 'contest_problem_submit' contest.pk contestProblem.problem.pk %}">{{ contestProblem.problem.title }}</a>
+            </td>
+            <td>
+              <small>
+                {% for category in contestProblem.problem.categories.all %}
+                  {{ category.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                  未分類
+                {% endfor %}
+              </small>
+            </td>
+            <td>
+              {% if contest_rank %}
+                {% for item in contest_rank.submission_info.items %}
+                  {% if item.0 == contestProblem.problem.id|stringformat:"i" %}
+                    {% if item.1.is_ac == True %}
+                      <span class="badge bg-success rounded-pill">Accepted</span>
+                    {% elif item.1.is_ac == False %}
+                      <span class="badge bg-info rounded-pill">提交未AC</span></a>
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                  <span class="badge bg-secondary rounded-pill">未提交</span></a>
+              {% endif %}
+           </td>
+         </tr>
+        {% endfor %}
+     </tbody>
+    </table>
+  </div>
+{% endblock page_content %}
+{% block script_block %}
+  <!-- countdown timer -->
+  <script src="{% static 'vendor/moment/moment.min.js' %}"></script>
+  <script>
+  // 這裡啟動倒數計時器
+  setCountDownTimer("countDownTimer", '{{contest.end_time}}');
+  //setCountDownTimer("countDownTimer", "Feb. 15, 2024 15:37:25");
+  function setCountDownTimer(countdownElement, endTime) {
+    //"Feb. 15, 2024 15:37:25"
+    //Feb. 11, 2024, 1:07 a.m.
+    //convert format from Feb. 11, 2024, 1:07 a.m. to 24 hours
+    let end_time = moment(endTime, 'MMM DD, YYYY, h:m a').format('YYYY-MM-DD HH:mm:ss');
+    console.log(end_time);
+
+    // Set the date we're counting down to
+    var countDownDate = new Date(end_time).getTime();
+
+    // Update the count down every 1 second
+    var x = setInterval(function () {
+      // Get today's date and time
+      var now = new Date().getTime();
+
+      // Find the distance between now and the count down date
+      var distance = countDownDate - now;
+
+      // Time calculations for days, hours, minutes and seconds
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      var minutes = Math.floor(
+        (distance % (1000 * 60 * 60)) / (1000 * 60)
+      );
+      var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      // Output the result in an element with id="countDownTimer"
+      document.getElementById(countdownElement).innerHTML =
+        days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+
+      // If the count down is over, write some text
+      if (distance < 0) {
+        clearInterval(x);
+        document.getElementById(countdownElement).innerHTML = "EXPIRED";
+      }
+    }, 1000);
+  } //function
+  </script>
+{% endblock script_block %}
