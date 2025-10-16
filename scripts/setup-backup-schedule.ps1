@@ -2,9 +2,11 @@
 # 建立 PostgreSQL 自動備份排程任務
 # ==========================
 
+# 如果執行腳本時遇到權限問題，需先允許執行腳本
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+
 # 需要以系統管理員權限執行此腳本
-# powershell -ExecutionPolicy Bypass -File C:\Users\user\Documents\letsoj\scripts\setup-backup-schedule.ps1
-# 或是 .\setup-backup-schedule.ps1 )
+# .\setup-backup-schedule.ps1
 
 # ==========================
 # 可自訂參數設定
