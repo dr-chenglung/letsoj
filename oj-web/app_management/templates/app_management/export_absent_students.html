@@ -1,0 +1,70 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+    匯出缺考者
+{% endblock page_title %}
+{% block page_content %}
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-export"></i> 匯出缺考者
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="contest_id" class="form-label">
+                                    <i class="fas fa-trophy"></i> 競賽編號 (選填)
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="contest_id" 
+                                       name="contest_id" 
+                                       placeholder="輸入特定競賽編號，不輸入則匯出全部公開競賽的缺考者">
+                                <small class="form-text text-muted">留空則匯出所有公開競賽的缺考者</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" name="action" value="preview" class="btn btn-info me-2">
+                                <i class="fas fa-eye"></i> 預覽
+                            </button>
+                            <button type="submit" name="action" value="download" class="btn btn-success">
+                                <i class="fas fa-download"></i> 下載 Excel
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                {% if export_result %}
+                    <div class="alert alert-info mt-4">
+                        <h5><i class="fas fa-info-circle"></i> 匯出結果預覽</h5>
+                        <ul class="list-unstyled mt-3">
+                            {% if export_result.contest_id %}
+                                <li><strong>競賽：</strong> {{ export_result.contest.title }} (ID: {{ export_result.contest_id }})</li>
+                            {% else %}
+                                <li><strong>範圍：</strong>所有公開競賽</li>
+                            {% endif %}
+                            <li><strong>缺考者數量：</strong> {{ export_result.absent_count }} 人</li>
+                            <li><strong>包含競賽數：</strong> {{ export_result.contests_count }} 場</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-success">
+                        <button type="submit" form="download-form" class="btn btn-success">
+                            <i class="fas fa-download"></i> 確認下載
+                        </button>
+                    </div>
+                    <form id="download-form" method="post" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="contest_id" value="{{ export_result.contest_id }}">
+                        <input type="hidden" name="action" value="download">
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock page_content %}
