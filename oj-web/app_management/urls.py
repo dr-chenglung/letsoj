@@ -82,7 +82,15 @@ urlpatterns = [
         name="delete_abnormal_users",
     ),
     path(
+        "get_login_logout_records/",
+        views.get_login_logout_records,
+        name="get_login_logout_records",
+    ),
+    path(
         "delete_user_sessions/", views.delete_user_sessions, name="delete_user_sessions"
+    ),
+    path(
+        "get_no_login_users/", views.get_no_login_users, name="get_no_login_users"
     ),
     # 下載排名
     path(

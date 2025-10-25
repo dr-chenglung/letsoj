@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from app_account.models import IPRegectedUser, SessionWarningUser
+from app_account.models import IPRegectedUser, SessionWarningUser, LoginHistory, LoggedInUser, LogoutHistory
 from app_management.models import (
     Language,
     ProblemCategory,
@@ -1039,7 +1039,41 @@ def get_abnormal_users(request):
 def delete_abnormal_users(request):
     IPRegectedUser.objects.all().delete()
     SessionWarningUser.objects.all().delete()
+    LoginHistory.objects.all().delete()
+    LogoutHistory.objects.all().delete()
     return JsonResponse({"message": "Sucessfully delete abnormal users' records"})
+
+
+@staff_member_required
+def get_login_logout_records(request):
+    """
+    取得所有登入登出紀錄
+    """
+    login_records = []
+    for record in LoginHistory.objects.all().order_by('-login_time'):
+        login_records.append({
+            "username": record.user.username,
+            "full_name": record.user.full_name,
+            "ip": record.ip,
+            "login_time": record.login_time.astimezone(curr_timezone).strftime("%Y/%m/%d %H:%M:%S"),
+            "is_staff_login": record.is_staff_login,
+        })
+    
+    logout_records = []
+    for record in LogoutHistory.objects.all().order_by('-logout_time'):
+        logout_records.append({
+            "username": record.user.username,
+            "full_name": record.user.full_name,
+            "ip": record.ip,
+            "logout_time": record.logout_time.astimezone(curr_timezone).strftime("%Y/%m/%d %H:%M:%S"),
+            "is_staff_logout": record.is_staff_logout,
+        })
+    
+    return JsonResponse({
+        "login_records": login_records,
+        "logout_records": logout_records,
+    })
+
 
 
 @staff_member_required
@@ -1072,6 +1106,93 @@ def delete_user_sessions(request):
     logger.info("所有使用者的 sessions 已成功清除!")
     # messages.success(request, "所有使用者的 sessions 已成功清除!")
     return JsonResponse({"message": "所有使用者的 sessions 已成功清除。"})
+
+
+@staff_member_required
+def get_no_login_users(request):
+    """
+    查詢尚未登入或在指定時間點後未有登入記錄的學生
+    根據班級和時間點進行篩選
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    
+    query_class = request.POST.get("query_class", "").strip()
+    query_time = request.POST.get("query_time", "").strip()
+    
+    try:
+        # 計算查詢時間點
+        if query_time:
+            # 使用者提供的時間點
+            query_datetime = datetime.strptime(query_time, "%Y-%m-%d %H:%M")
+            query_datetime = timezone.make_aware(query_datetime)
+        else:
+            # 默認為當下時間之前3個小時
+            query_datetime = timezone.now() - timedelta(hours=3)
+        
+        # 查詢所有非管理員的學生
+        students_query = User.objects.filter(is_staff=False)
+        
+        # 如果指定了班級，就篩選該班級的學生
+        if query_class:
+            students_query = students_query.filter(user_class=query_class)
+        
+        # 查詢在指定時間點之後有過登入記錄的學生ID
+        logged_in_user_ids = set()
+        
+        # 方法1：從LoggedInUser表查詢（當前登入的使用者）
+        logged_in_users = LoggedInUser.objects.filter(
+            created_at__gte=query_datetime
+        ).values_list('user_id', flat=True)
+        logged_in_user_ids.update(logged_in_users)
+        
+        # 方法2：從LoginHistory表查詢（登入歷史）
+        login_histories = LoginHistory.objects.filter(
+            login_time__gte=query_datetime
+        ).values_list('user_id', flat=True)
+        logged_in_user_ids.update(login_histories)
+        
+        # 找出沒有登入的學生
+        no_login_users = students_query.exclude(id__in=logged_in_user_ids).order_by(
+            "user_class", "username"
+        )
+        
+        # 構建回應數據
+        result = []
+        for user in no_login_users:
+            # 獲取最後一次登入時間
+            last_login = None
+            
+            # 從LoginHistory查詢最後一次登入時間
+            login_record = LoginHistory.objects.filter(
+                user=user
+            ).order_by('-login_time').first()
+            
+            if login_record:
+                last_login = timezone.localtime(login_record.login_time).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            
+            result.append({
+                "username": user.username,
+                "full_name": user.full_name,
+                "user_class": user.user_class,
+                "last_login_time": last_login,
+            })
+        
+        return JsonResponse({
+            "no_login_users": result,
+            "query_class": query_class,
+            "query_time": query_time,
+            "count": len(result),
+        })
+    
+    except ValueError as e:
+        logger.error(f"時間格式錯誤: {e}")
+        return JsonResponse({"error": "時間格式錯誤，請使用 YYYY-MM-DD HH:mm 格式"}, status=400)
+    except Exception as e:
+        logger.error(f"查詢未登入學生時發生錯誤: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @staff_member_required
@@ -1809,13 +1930,14 @@ def export_all_scores_to_excel(request):
 def export_absent_students(request):
     """
     匯出缺考者名單
-    可以指定特定競賽編號，或匯出所有公開競賽的缺考者
+    可以指定特定競賽編號和班級，留空則表示全部
     """
     export_result = None
     
     if request.method == 'POST':
         action = request.POST.get('action', 'preview')
         contest_id = request.POST.get('contest_id', '').strip()
+        user_class = request.POST.get('user_class', '').strip()
         
         # 確定要查詢的競賽
         contests = []
@@ -1835,9 +1957,15 @@ def export_absent_students(request):
             messages.error(request, '找不到任何公開競賽')
             return render(request, 'app_management/export_absent_students.html')
         
-        # 取得非管理員的所有使用者
+        # 取得非管理員的所有使用者，根據班級篩選
         staff = User.objects.filter(is_staff=True)
-        students = User.objects.filter(is_staff=False).order_by('user_class', 'username')
+        students_query = User.objects.filter(is_staff=False)
+        
+        # 如果指定了班級，就篩選該班級的學生
+        if user_class:
+            students_query = students_query.filter(user_class=user_class)
+        
+        students = students_query.order_by('user_class', 'username')
         
         # 收集缺考者資料
         absent_data = []
@@ -1867,14 +1995,19 @@ def export_absent_students(request):
             response = HttpResponse(
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
-            response['Content-Disposition'] = f'attachment; filename="absent_students_{contest_id if contest_id else "all"}.xlsx"'
+            filename = 'absent_students'
+            if contest_id:
+                filename += f'_contest{contest_id}'
+            if user_class:
+                filename += f'_class{user_class}'
+            response['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
             
             workbook = openpyxl.Workbook()
             worksheet = workbook.active
             worksheet.title = '缺考者'
             
             # 設定表頭
-            headers = ['序號', '競賽編號', '競賽名稱', '顯示順序', '學號', '姓名', '班級']
+            headers = ['序號', '競賽編號', '競賽名稱', '學號', '姓名', '班級']
             for col_idx, header in enumerate(headers, 1):
                 cell = worksheet.cell(row=1, column=col_idx)
                 cell.value = header
@@ -1884,10 +2017,9 @@ def export_absent_students(request):
                 worksheet.cell(row=row_idx, column=1).value = row_idx - 1
                 worksheet.cell(row=row_idx, column=2).value = data['contest_id']
                 worksheet.cell(row=row_idx, column=3).value = data['contest_title']
-                worksheet.cell(row=row_idx, column=4).value = data['contest_display_seq']
-                worksheet.cell(row=row_idx, column=5).value = data['username']
-                worksheet.cell(row=row_idx, column=6).value = data['full_name']
-                worksheet.cell(row=row_idx, column=7).value = data['user_class']
+                worksheet.cell(row=row_idx, column=4).value = data['username']
+                worksheet.cell(row=row_idx, column=5).value = data['full_name']
+                worksheet.cell(row=row_idx, column=6).value = data['user_class']
             
             workbook.save(response)
             return response
@@ -1895,17 +2027,33 @@ def export_absent_students(request):
         # 預覽結果
         export_result = {
             'contest_id': contest_id,
+            'user_class': user_class,
             'contest': contests[0] if contest_id else None,
             'contests_count': len(contests),
             'absent_count': len(absent_data),
         }
         
         from django.utils.safestring import mark_safe
+        
+        # 構建範圍說明文字
+        range_text = []
+        if contest_id:
+            range_text.append(f"競賽 {contests[0].title} (ID: {contest_id})")
+        else:
+            range_text.append("所有公開競賽")
+        
+        if user_class:
+            range_text.append(f"班級 {user_class}")
+        else:
+            range_text.append("全部班級")
+        
+        range_description = "、".join(range_text)
+        
         if absent_data:
             messages.success(
                 request,
                 mark_safe(f'✅ <strong>匯出預覽完成</strong><br>'
-                         f'📋 範圍：{"競賽 " + contests[0].title + " (ID: " + str(contest_id) + ")" if contest_id else "所有公開競賽"}<br>'
+                         f'📋 範圍：{range_description}<br>'
                          f'👥 缺考者數量：{len(absent_data)} 人<br>'
                          f'🏛️ 包含競賽數：{len(contests)} 場<br>'
                          f'<br>請點擊下方「確認下載」按鈕來下載檔案')
@@ -1914,7 +2062,7 @@ def export_absent_students(request):
             messages.info(
                 request,
                 mark_safe(f'ℹ️ 未找到缺考者<br>'
-                         f'📋 範圍：{"競賽 " + contests[0].title + " (ID: " + str(contest_id) + ")" if contest_id else "所有公開競賽"}')
+                         f'📋 範圍：{range_description}')
             )
     
     context = {'export_result': export_result}
