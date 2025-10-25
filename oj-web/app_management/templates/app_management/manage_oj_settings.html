@@ -84,10 +84,10 @@
     <div class="d-flex">
       <button type="submit"
               id="btn_display_abnormal_users"
-              class="btn btn-sm btn-primary me-2">顯示考生登入情況(再按一次刷新)</button>
+              class="btn btn-sm btn-primary me-2">顯示考生多次登入與被拒絕IP情況(再按一次刷新)</button>
       <button type="submit"
               id="btn_delete_abnormal_users"
-              class="btn btn-sm btn-danger me-2">-->可以先清除前一次的考生被拒絕IP與多次登入資料庫的舊紀錄(進行新上機考)</button>
+              class="btn btn-sm btn-danger me-2">-->先清除前一次的考生被拒絕IP與多次登入、登入登出紀錄等資料庫的舊紀錄(進行新上機考)</button>
     </div>
   </div>
   <!-- 顯示區塊-->
@@ -118,6 +118,63 @@
     </div>
   </div>
   <!-- 區塊結束-->
+
+   <div class="row mt-5 mb-3">
+    <h5>查詢未到學生(尚未登入的學生)</h5>
+    <label class="form-label d-block">可以選填班級和時間點，查詢該時間點後尚未登入的學生。若未填寫時間點則默認為當下時間之前3個小時。</label>
+  </div>
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <label for="queryClass" class="form-label">班級(選填)</label>
+      <input type="text" 
+             class="form-control m-input" 
+             id="queryClass" 
+             placeholder="例如：1A, 2B" />
+    </div>
+    <div class="col-md-4">
+      <label for="queryTime" class="form-label">查詢時間點(選填，格式：YYYY-MM-DD HH:mm)</label>
+      <input type="text" 
+             class="form-control m-input" 
+             id="queryTime" 
+             placeholder="例如：2024-10-25 14:30" />
+    </div>
+    <div class="col-md-3">
+      <label>&nbsp;</label>
+      <button type="button"
+              id="btn_query_no_login_users"
+              class="btn btn-sm btn-success w-100">查詢未到學生(再按一次刷新)</button>
+    </div>
+  </div>
+  <!-- 顯示區塊-->
+  <div class="col-lg-6 mb-2">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="h6 text-uppercase mb-0">沒有登入的考生</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div id="display_no_login_users"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 區塊結束-->
+
+    <!-- 顯示區塊-->
+  <div class="col-lg-6 mb-2">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="h6 text-uppercase mb-0">登入登出紀錄</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div id="display_login_logout_records"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 區塊結束-->
+
 {% endblock page_content %}
 {% block script_block %}
   <script>
@@ -329,27 +386,75 @@ $(".form-check-input").on("change", function () {
         data_session_warning = response["session_warning_users"];
 
         $("#display_rejected_ip_users").empty();
-        let text = "";
-        for (let i = 0; i < data_ip_rejected.length; i++) {
-          text += data_ip_rejected[i]["username"] + ",";
-          text += data_ip_rejected[i]["full_name"] + ",";
-          text += data_ip_rejected[i]["ip"] + ",";
-          text += data_ip_rejected[i]["created_at"] + "<br>";
+        if (data_ip_rejected.length === 0) {
+          $("#display_rejected_ip_users").append("<span>無紀錄</span>");
+        } else {
+          let text = "";
+          for (let i = 0; i < data_ip_rejected.length; i++) {
+            text += data_ip_rejected[i]["username"] + ",";
+            text += data_ip_rejected[i]["full_name"] + ",";
+            text += data_ip_rejected[i]["ip"] + ",";
+            text += data_ip_rejected[i]["created_at"] + "<br>";
+          }
+          $("#display_rejected_ip_users").append(text);
         }
-        $("#display_rejected_ip_users").append(text);
 
         $("#display_multiple_session_users").empty();
-        let text2 = "";
-        for (let i = 0; i < data_session_warning.length; i++) {
-          text2 += data_session_warning[i]["username"] + ",";
-          text2 += data_session_warning[i]["full_name"] + ",";
-          text2 += data_session_warning[i]["ip"] + ",";
-          text2 += data_session_warning[i]["created_at"] + "<br>";
+        if (data_session_warning.length === 0) {
+          $("#display_multiple_session_users").append("<span>無紀錄</span>");
+        } else {
+          let text2 = "";
+          for (let i = 0; i < data_session_warning.length; i++) {
+            text2 += data_session_warning[i]["username"] + ",";
+            text2 += data_session_warning[i]["full_name"] + ",";
+            text2 += data_session_warning[i]["ip"] + ",";
+            text2 += data_session_warning[i]["created_at"] + "<br>";
+          }
+          $("#display_multiple_session_users").append(text2);
         }
-        $("#display_multiple_session_users").append(text2);
+        
+        // 顯示登入登出紀錄
+        displayLoginLogoutRecords();
       }, //success function
     }); //ajax
   });
+
+  // 顯示登入登出紀錄
+  function displayLoginLogoutRecords() {
+    jQuery.ajax({
+      type: "GET",
+      url: "/manage/get_login_logout_records/",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function (response) {
+        $("#display_login_logout_records").empty();
+        
+        if (!response["login_records"] || response["login_records"].length === 0) {
+          $("#display_login_logout_records").append("<span>無登入紀錄</span>");
+        } else {
+          let text = "<strong>登入紀錄：</strong><br>";
+          for (let i = 0; i < response["login_records"].length; i++) {
+            const record = response["login_records"][i];
+            text += `${record["username"]},${record["full_name"]},${record["ip"]},${record["login_time"]}<br>`;
+          }
+          $("#display_login_logout_records").append(text);
+        }
+        
+        if (response["logout_records"] && response["logout_records"].length > 0) {
+          let text2 = "<br><strong>登出紀錄：</strong><br>";
+          for (let i = 0; i < response["logout_records"].length; i++) {
+            const record = response["logout_records"][i];
+            text2 += `${record["username"]},${record["full_name"]},${record["ip"]},${record["logout_time"]}<br>`;
+          }
+          $("#display_login_logout_records").append(text2);
+        }
+      },
+      error: function (error) {
+        console.log("獲取登入登出紀錄失敗:", error);
+      }
+    });
+  }
 
   $("#btn_delete_abnormal_users").on("click", function () {
     let result = window.confirm("清除使用者登入紀錄?");
@@ -368,6 +473,8 @@ $(".form-check-input").on("change", function () {
         $("#display_rejected_ip_users").append(response["message"]);
         $("#display_multiple_session_users").empty();
         $("#display_multiple_session_users").append(response["message"]);
+        $("#display_login_logout_records").empty();
+        $("#display_login_logout_records").append(response["message"]);
       }, //success function
     }); //ajax
   }); // btn_delete_abnormal_users
@@ -390,5 +497,100 @@ $(".form-check-input").on("change", function () {
       }, //success function
     }); //ajax
   }); // btn_delete_sessions
+
+  // 查詢未到學生（尚未登入的學生）
+  $("#btn_query_no_login_users").on("click", function () {
+    let queryClass = $("#queryClass").val().trim();
+    let queryTime = $("#queryTime").val().trim();
+    
+    // 檢查輸入的時間格式是否正確
+    if (queryTime && !isValidDateTime(queryTime)) {
+      showMessage("時間格式錯誤，請使用 YYYY-MM-DD HH:mm 格式", "text-danger");
+      return;
+    }
+    
+    jQuery.ajax({
+      type: "POST",
+      url: "/manage/get_no_login_users/",
+      data: {
+        query_class: queryClass,
+        query_time: queryTime,
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function (response) {
+        console.log(response);
+        
+        $("#display_no_login_users").empty();
+        
+        if (response["no_login_users"].length === 0) {
+          $("#display_no_login_users").append("<span style='color: green;'>🎉 所有學生都已登入！</span>");
+        } else {
+          let text = "";
+          text += `<strong>查詢條件：</strong><br>`;
+          if (queryClass) {
+            text += `班級: ${queryClass} | `;
+          } else {
+            text += `班級: 全部 | `;
+          }
+          if (queryTime) {
+            text += `時間點: ${queryTime}<br>`;
+          } else {
+            text += `時間點: 未指定 (默認當下時間之前三個小時)<br>`;
+          }
+          text += `<strong>未到學生總數: ${response["no_login_users"].length} 人</strong><br><br>`;
+          
+          text += "<table class='table table-sm table-striped'>";
+          text += "<thead><tr><th>學號</th><th>姓名</th><th>班級</th><th>最後登入時間</th></tr></thead><tbody>";
+          
+          for (let i = 0; i < response["no_login_users"].length; i++) {
+            const user = response["no_login_users"][i];
+            text += `<tr>`;
+            text += `<td>${user["username"]}</td>`;
+            text += `<td>${user["full_name"]}</td>`;
+            text += `<td>${user["user_class"]}</td>`;
+            text += `<td>${user["last_login_time"] || "未登入"}</td>`;
+            text += `</tr>`;
+          }
+          
+          text += "</tbody></table>";
+          $("#display_no_login_users").append(text);
+        }
+        
+        // 顯示登入登出紀錄
+        displayLoginLogoutRecords();
+      },
+      error: function (error) {
+        console.log("查詢失敗:", error);
+        showMessage("查詢失敗，請重試", "text-danger");
+      }
+    });
+  });
+  
+  // 驗證日期時間格式
+  function isValidDateTime(dateTimeStr) {
+    // 格式：YYYY-MM-DD HH:mm
+    const pattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+    if (!pattern.test(dateTimeStr)) {
+      return false;
+    }
+    
+    // 進一步驗證日期時間的有效性
+    const parts = dateTimeStr.split(" ");
+    const dateParts = parts[0].split("-");
+    const timeParts = parts[1].split(":");
+    
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]);
+    const day = parseInt(dateParts[2]);
+    const hour = parseInt(timeParts[0]);
+    const minute = parseInt(timeParts[1]);
+    
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    if (hour < 0 || hour > 23) return false;
+    if (minute < 0 || minute > 59) return false;
+    
+    return true;
+  }
   </script>
 {% endblock script_block %}
