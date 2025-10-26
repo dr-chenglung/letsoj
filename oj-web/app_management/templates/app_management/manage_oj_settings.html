@@ -53,7 +53,8 @@
              name="darkmode"
              value="true" />
       <label class="form-check-label">只允許考生有一個登入，換個瀏覽器、換電腦再登入，前一個登入會被踢出。</label>
-      <label class="form-check-label">若代考者由不同電腦登入，原考生的登入會失效(被踢出)，這樣無法完全防止代考，只能印出多次登入的考生，向該位考生查問其多次登入的原因，在考場上加以防止。</label>
+      <label class="form-check-label">若代考者由不同電腦登入，原考生的登入會失效(被踢出)，這樣無法完全防止代考，但可以顯示與查看多次登入的考生，向該位考生查問其多次登入的原因，在考場上可遏阻代考的行為。</label>
+      <label class="form-check-label">也有可能是其他原因導致的多次登入，例如:換個瀏覽器、換電腦再登入，需要加以確認。</label>
     </div>
     <div class="form-check form-switch">
       <input class="form-check-input"
@@ -87,7 +88,7 @@
               class="btn btn-sm btn-primary me-2">顯示考生多次登入與被拒絕IP情況(再按一次刷新)</button>
       <button type="submit"
               id="btn_delete_abnormal_users"
-              class="btn btn-sm btn-danger me-2">-->先清除前一次的考生被拒絕IP與多次登入、登入登出紀錄等資料庫的舊紀錄(進行新上機考)</button>
+              class="btn btn-sm btn-danger me-2">-->先清除前一次的考生被拒絕IP、多次登入、登入登出紀錄等資料庫的舊紀錄(進行新上機考之前做一次就好)</button>
     </div>
   </div>
   <!-- 顯示區塊-->
@@ -120,7 +121,11 @@
   <!-- 區塊結束-->
 
    <div class="row mt-5 mb-3">
-    <h5>查詢未到學生(尚未登入的學生)</h5>
+    <div class="col-md-4">
+    <button type="button"
+        id="btn_query_no_login_users"
+        class="btn btn-sm btn-success w-100">查詢未登入的學生(再按一次刷新)</button>
+    </div>
     <label class="form-label d-block">可以選填班級和時間點，查詢該時間點後尚未登入的學生。若未填寫時間點則默認為當下時間之前3個小時。</label>
   </div>
   <div class="row mb-3">
@@ -137,12 +142,6 @@
              class="form-control m-input" 
              id="queryTime" 
              placeholder="例如：2024-10-25 14:30" />
-    </div>
-    <div class="col-md-3">
-      <label>&nbsp;</label>
-      <button type="button"
-              id="btn_query_no_login_users"
-              class="btn btn-sm btn-success w-100">查詢未到學生(再按一次刷新)</button>
     </div>
   </div>
   <!-- 顯示區塊-->

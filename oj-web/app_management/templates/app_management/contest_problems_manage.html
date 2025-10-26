@@ -1,13 +1,13 @@
 {% extends "app_management/base_management.html" %}
 {% block page_title %}
-  競賽考題維護
+  競賽:{{contest.pk}}
 {% endblock page_title %}
 {% block page_content %}
   <div class="col-12 mt-2">
-    <h3>競賽考題維護</h3>
-    <h5>
-      競賽名稱: <span class="badge bg-info">(ID編號{{contest.pk}}): {{ contest.title }}</span>
-    </h5>
+    <h3>競賽編號:{{contest.pk}}-考題維護</h3>
+    <h4>
+      <span class="badge bg-info">{{ contest.title }}(編號:{{contest.pk}})</span>
+    </h4>
     <div class="row mb-3">
       <div class="col-sm-12">
         <a href="{% url 'contest_owns_problems' contest.pk %}">
