@@ -642,13 +642,29 @@ def get_contest_ranking(request, contest_id):
         .exclude(submitted_by__in=staff)
         .order_by("-accepted_count", "total_time")
     )
-
+    # 取得題目目前的編號，用於替換 qz_prblm_id，顯示在排名頁面。
+    # 目的:原來的紀錄是提交當時的紀錄，若之後有修改題目順序，會依據最新的題目編號
     for userRecord in contest_ranks:
+        # 根據 contest_id + problem_id 查詢 ContestProblem，取得 id_prblm_in_contest 替換 qz_prblm_id
+        for problem_id_str, submission in userRecord.submission_info.items():
+            problem_id = int(problem_id_str)
+            try:
+                contest_problem = ContestProblem.objects.get(
+                    contest=contest,
+                    problem_id=problem_id
+                )
+                # 用 id_prblm_in_contest (seq_id) 的值替換 qz_prblm_id
+                submission["qz_prblm_id"] = contest_problem.id_prblm_in_contest
+            except ContestProblem.DoesNotExist:
+                # 若未找到對應的 ContestProblem，保持原值不變
+                pass
+        
         if (
             userRecord.accepted_count != 0
-        ):  # 有提交成功才有時間紀錄 若無時間紀錄在網頁會顯示"尚未提交"
+        ):  # 有提交成功才有時間紀錄 若無時間紀錄在網頁會顯示"未完成"
+            # 計算平均時間
             result = userRecord.total_time / 60 / userRecord.accepted_count
-            userRecord.total_time = round(result, 1) if result < 10 else round(result)
+            userRecord.total_time = round(result, 1) if result < 10 else round(result,1)
 
             # q.total_time = round(q.total_time / 60 / q.accepted_count)
         # q.save() # 千萬不要存回資料庫 total_time原始的時間是秒,此處轉為分鐘,若未提交成功,total_time=0,網頁會判斷為'未完成'
@@ -714,6 +730,10 @@ def user_contests_summary(request):
     contests_info = []
     for rank in attended_contest_ranks:
         contest = rank.contest
+        # 只計算公開競賽的成績
+        if not contest.is_public:
+            continue
+            
         contest_problems_count = ContestProblem.objects.filter(contest=contest).count()
 
         # 查詢比賽資料
@@ -734,12 +754,12 @@ def user_contests_summary(request):
         average_time = 0
         if (
             rank.accepted_count != 0
-        ):  # 有提交成功才有時間紀錄 若無時間紀錄在網頁會顯示"尚未提交"
+        ):  # 有提交成功才有時間紀錄 若無時間紀錄在網頁會顯示"未完成"
             # 計算平均時間
             result = rank.total_time / 60 / rank.accepted_count
-            average_time = round(result, 1) if result < 10 else round(result)
+            average_time = round(result, 1) if result < 10 else round(result,1)
 
-            # 計算排名
+            # 取得排名是第幾名
             for index, rank in enumerate(all_users_contest_ranks, start=1):
                 if rank.submitted_by == request.user:
                     user_rank = index
