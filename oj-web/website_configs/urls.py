@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("", include("app_oj.urls")),
@@ -9,3 +11,8 @@ urlpatterns = [
     path("manage/", include("app_management.urls")),
     path("admin/", admin.site.urls),
 ]
+
+# 在開發環境中，由 Django 提供靜態文件服務
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0] if settings.STATICFILES_DIRS else None)
