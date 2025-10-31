@@ -1,20 +1,12 @@
 #!/bin/bash
 
-# 下載 CDN 資源到本地（僅在首次啟動或資源不存在時執行）
-if [ ! -f "/app/static/vendor/.downloaded" ]; then
+# 下載 CDN 資源到本地（檢查目錄是否存在且非空）
+if [ ! -d "/app/static/vendor" ] || [ -z "$(ls -A /app/static/vendor)" ]; then
     echo "=========================================="
-    echo "首次啟動：下載 CDN 資源到本地..."
+    echo "首次啟動或資源遺失：下載 CDN 資源到本地..."
     echo "=========================================="
     bash /app/download-cdn-resources.sh
 fi
-
-# 更新模板檔案使用本地資源（僅在首次啟動或未修改時執行）
-# if [ ! -f "/app/templates/.patched" ]; then
-#     echo "=========================================="
-#     echo "首次啟動：更新模板檔案..."
-#     echo "=========================================="
-#     bash /app/patch-templates.sh
-# fi
 
 # Make migrations
 echo "Make migrations"

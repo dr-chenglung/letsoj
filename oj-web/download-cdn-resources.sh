@@ -19,6 +19,9 @@ mkdir -p /app/static/vendor/mathjax
 mkdir -p /app/static/vendor/chartjs
 mkdir -p /app/static/vendor/moment
 mkdir -p /app/static/vendor/marked
+mkdir -p /app/static/vendor/easymde
+mkdir -p /app/static/vendor/ace
+mkdir -p /app/static/vendor/autosize
 
 # 檢查是否已下載（避免重複下載）
 # 因為使用 volume 掛載，資源會保存在主機，所以只需下載一次
@@ -76,6 +79,19 @@ wget -q https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js -O /app/static/
 # 下載 Marked.js
 echo "下載 Marked.js..."
 wget -q https://cdnjs.cloudflare.com/ajax/libs/marked/7.0.0/marked.min.js -O /app/static/vendor/marked/marked.min.js
+
+# 下載 EasyMDE (Markdown Editor)
+echo "下載 EasyMDE..."
+wget -q https://cdn.jsdelivr.net/npm/easymde@1.11.2/dist/easymde.min.css -O /app/static/vendor/easymde/easymde.min.css
+wget -q https://cdn.jsdelivr.net/npm/easymde@1.11.2/dist/easymde.min.js -O /app/static/vendor/easymde/easymde.min.js
+
+# 下載 Ace Editor
+echo "下載 Ace Editor..."
+wget -q https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js -O /app/static/vendor/ace/ace.min.js
+
+# 下載 Autosize
+echo "下載 Autosize..."
+wget -q https://cdn.jsdelivr.net/npm/autosize@4.0.2/dist/autosize.min.js -O /app/static/vendor/autosize/autosize.min.js
 
 # 建立標記檔案
 touch /app/static/vendor/.downloaded
