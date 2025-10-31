@@ -95,7 +95,7 @@
 {% endblock page_content %}
 {% block link_css %}
 <!-- EasyMDE CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+  <link rel="stylesheet" href="{% static 'vendor/easymde/easymde.min.css' %}">
 
   <!-- Include highlight.js CSS for code color in problem description -->
   <link rel="stylesheet"
@@ -130,7 +130,7 @@
 
   <!-- This js is for markdown editor -->
   <!-- EasyMDE JS -->
-  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <script src="{% static 'vendor/easymde/easymde.min.js' %}"></script>
 
   <!-- Include highlight.js JavaScript for coloring code -->
   <script src="{% static 'vendor/highlight/highlight.min.js' %}"></script>
@@ -223,7 +223,7 @@
 </script>
 
 <!-- 可將Textarea自動調整高度，不必用捲軸。引入 autosize 插件 -->
-<script src="https://cdn.jsdelivr.net/npm/autosize@4.0.2/dist/autosize.min.js"></script>
+<script src="{% static 'vendor/autosize/autosize.min.js' %}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     autosize(document.querySelectorAll('textarea.auto-resize'));

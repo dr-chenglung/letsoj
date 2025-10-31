@@ -107,7 +107,7 @@
 {% block link_css %}
     <!-- EasyMDE CSS -->
     <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+          href="{% static 'vendor/easymde/easymde.min.css' %}">
     <!-- Include highlight.js CSS for code color in problem description -->
     <link rel="stylesheet"
           href="{% static 'vendor/highlight/default.min.css' %}">
@@ -119,7 +119,7 @@
 {% endblock link_css %}
 {% block script_block %}
     <!-- For Java code textarea 程式碼 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <script src="{% static 'vendor/ace/ace.min.js' %}"></script>
     <!-- The following js is for math equation
     -->
     <script src="{% static 'vendor/mathjax/tex-chtml-full.min.js' %}"></script>
@@ -137,7 +137,7 @@
     <script src="{% static 'vendor/marked/marked.min.js' %}"></script>
     <!-- This js is for markdown editor -->
     <!-- EasyMDE JS -->
-    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="{% static 'vendor/easymde/easymde.min.js' %}"></script>
     <!-- Include highlight.js JavaScript for coloring code -->
     <script src="{% static 'vendor/highlight/highlight.min.js' %}"></script>
     <script>hljs.highlightAll();</script>
@@ -226,7 +226,7 @@
       //});
     </script>
     <!-- 可將Textarea自動調整高度，不必用捲軸。引入 autosize 插件 -->
-    <script src="https://cdn.jsdelivr.net/npm/autosize@4.0.2/dist/autosize.min.js"></script>
+    <script src="{% static 'vendor/autosize/autosize.min.js' %}"></script>
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         autosize(document.querySelectorAll('textarea.auto-resize'));

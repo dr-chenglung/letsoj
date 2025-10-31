@@ -112,16 +112,19 @@
   <script>
     var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         lineNumbers: true,
-        //viewportMargin: 15, // Set the number of rows
-        mode: "text/x-java",
-        theme: "monokai",
+        mode: 'text/x-java',  // 統一使用 Java 模式
+        theme: 'monokai',     // 統一使用 Monokai 主題
         autoRefresh: true,
         viewportMargin: Infinity,
-        lineWrapping: true,  // Prevents horizontal scroll by wrapping long lines
+        lineWrapping: true,   // Prevents horizontal scroll by wrapping long lines
+        tabSize: 4,
+        indentUnit: 4,
+        indentWithTabs: false
     });
 
     // Set the text size
     editor.getWrapperElement().style.fontSize = '15px';
+    
     var sample_code = `{{ problem.sample_code|escapejs|safe }}`;
     editor.setValue(sample_code);
   </script>

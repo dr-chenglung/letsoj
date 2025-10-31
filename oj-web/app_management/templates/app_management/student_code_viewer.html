@@ -1,14 +1,46 @@
 {% extends "app_management/base_management.html" %}
+{% load static %}
+
 {% block page_title %}
     學生程式碼查閱
 {% endblock page_title %}
 
 {% block page_content %}
+<!-- 引入 Prism.js 進行語法高亮 (本地資源) - 放在內容開頭 -->
+<link href="{% static 'vendor/prism/prism-tomorrow.min.css' %}" rel="stylesheet" />
+<script src="{% static 'vendor/prism/prism.min.js' %}"></script>
+<script src="{% static 'vendor/prism/prism-python.min.js' %}"></script>
+<script src="{% static 'vendor/prism/prism-java.min.js' %}"></script>
+<script src="{% static 'vendor/prism/prism-c.min.js' %}"></script>
+<script src="{% static 'vendor/prism/prism-cpp.min.js' %}"></script>
+<script src="{% static 'vendor/prism/prism-javascript.min.js' %}"></script>
 <div class="container mt-2">
     <h3>學生程式碼查閱系統</h3>
     <p class="text-muted">選擇學生、競賽、題目來查看學生提交的程式碼</p>
     
     <form method="GET" action="{% url 'student_code_viewer' %}">
+        <!-- 學生篩選輸入欄位 -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="student_id_input" class="form-label">輸入學號</label>
+                <input type="text" class="form-control" id="student_id_input" name="student_id_input" 
+                    placeholder="直接輸入學生學號..." 
+                    value="{{ student_id_input|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="student_name_input" class="form-label">姓名過濾</label>
+                <input type="text" class="form-control" id="student_name_input" name="student_name_input" 
+                    placeholder="輸入學生姓名..." 
+                    value="{{ student_name_input|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-outline-secondary w-100" id="clear_filters_btn">
+                    <i class="bi bi-eraser"></i> 清除篩選
+                </button>
+            </div>
+        </div>
+        
         <div class="row mb-3">
             <!-- 學生選擇 -->
             <div class="col-md-4">
@@ -72,7 +104,7 @@
     </form>
     
     {% if submission %}
-        <!-- 顯示提交資訊 -->
+        <!-- 顯示單一題目的提交資訊 -->
         <div class="card mb-3">
             <div class="card-header bg-info text-white">
                 <h5 class="mb-0">
@@ -123,7 +155,7 @@
             </div>
         </div>
         
-        <!-- 顯示程式碼 -->
+        <!-- 顯示單一題目的程式碼 -->
         <div class="card">
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">
@@ -131,7 +163,7 @@
                 </h5>
             </div>
             <div class="card-body p-0">
-                <pre class="mb-0" style="max-height: 600px; overflow-y: auto;"><code class="language-{{ selected_problem.language.name|lower }}">{{ submission.source_code }}</code></pre>
+                <pre class="mb-0 prism-container" style="max-height: 600px; overflow-y: auto;"><code class="language-{{ selected_problem.language.name|lower }}" data-language="{{ selected_problem.language.name|lower }}">{{ submission.source_code }}</code></pre>
             </div>
         </div>
         
@@ -149,6 +181,77 @@
             </div>
         {% endif %}
         
+    {% elif submissions_list %}
+        <!-- 顯示所有題目的提交 -->
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            <strong>{{ selected_student.username }}</strong> 在競賽 <strong>{{ selected_contest.title }}</strong> 中的所有題目提交
+        </div>
+        
+        {% for item in submissions_list %}
+            <div class="card mb-4">
+                <div class="card-header {% if item.submission %}bg-dark{% else %}bg-secondary{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-code-slash"></i> 
+                        題目 [{{ item.problem_seq }}] {{ item.problem.title }}
+                    </h5>
+                </div>
+                
+                {% if item.submission %}
+                    <!-- 提交資訊 -->
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <strong>語言：</strong><br>
+                                {{ item.problem.language.name }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>提交時間：</strong><br>
+                                {{ item.submission.submitted_at|date:"Y-m-d H:i:s" }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>判題狀態：</strong><br>
+                                <span class="badge 
+                                    {% if item.submission.judge_status == 3 %}bg-success
+                                    {% elif item.submission.judge_status == 4 %}bg-danger
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ item.submission.judge_status_description }}
+                                </span>
+                            </div>
+                            <div class="col-md-3">
+                                {% if item.submission.judge_compile_output %}
+                                    <strong>編譯輸出：</strong><br>
+                                    <small class="text-muted">{{ item.submission.judge_compile_output|truncatewords:5 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 程式碼 -->
+                    <div class="card-body p-0 border-top">
+                        <pre class="mb-0 prism-container" style="max-height: 400px; overflow-y: auto;"><code class="language-{{ item.problem.language.name|lower }}" data-language="{{ item.problem.language.name|lower }}">{{ item.submission.source_code }}</code></pre>
+                    </div>
+                    
+                    <!-- 編譯輸出詳情 -->
+                    {% if item.submission.judge_compile_output %}
+                        <div class="card-body border-top">
+                            <strong><i class="bi bi-exclamation-triangle"></i> 編譯/執行輸出：</strong>
+                            <pre class="mb-0 mt-2" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">{{ item.submission.judge_compile_output }}</pre>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- 未提交 -->
+                    <div class="card-body">
+                        <div class="alert alert-warning mb-0" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>該題目未提交</strong><br>
+                            學生 <strong>{{ selected_student.username }}</strong> 未在競賽中提交此題目。
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        
     {% elif selected_student and selected_contest and selected_problem %}
         <!-- 沒有找到提交記錄 -->
         <div class="alert alert-warning" role="alert">
@@ -161,43 +264,225 @@
     {% endif %}
 </div>
 
-<!-- 引入 Prism.js 進行語法高亮 -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-
 <script>
-    // 當選擇競賽時，自動提交表單以載入題目
-    document.getElementById('contest_select').addEventListener('change', function() {
-        if (this.value) {
-            // 保留學生選擇，清除題目選擇，提交表單
-            document.getElementById('problem_select').value = '';
-            this.form.submit();
+    document.addEventListener('DOMContentLoaded', function() {
+        const studentSelect = document.getElementById('student_select');
+        const studentIdInput = document.getElementById('student_id_input');
+        const studentNameInput = document.getElementById('student_name_input');
+        const clearFiltersBtn = document.getElementById('clear_filters_btn');
+        const contestSelect = document.getElementById('contest_select');
+        const problemSelect = document.getElementById('problem_select');
+        const form = studentSelect.closest('form');
+        
+        // 保存所有選項和 optgroup 的原始結構
+        const allOptions = [];
+        const optgroups = [];
+        
+        // 提取所有原始選項
+        document.querySelectorAll('#student_select optgroup').forEach(optgroup => {
+            const groupData = {
+                label: optgroup.label,
+                options: []
+            };
+            optgroup.querySelectorAll('option').forEach(option => {
+                groupData.options.push({
+                    element: option.cloneNode(true),
+                    value: option.value,
+                    text: option.textContent.trim(),
+                    username: option.textContent.split(' - ')[0].trim(),
+                    fullName: option.textContent.split(' - ')[1]?.trim() || ''
+                });
+            });
+            optgroups.push(groupData);
+            allOptions.push(...groupData.options);
+        });
+        
+        // 篩選學生選擇下拉選單
+        function filterStudents() {
+            const idFilterValue = studentIdInput.value.toLowerCase().trim();
+            const nameFilterValue = studentNameInput.value.toLowerCase().trim();
+            
+            // 清空 select
+            studentSelect.innerHTML = '<option value="">請選擇學生...</option>';
+            
+            let firstMatchedOptionValue = null;
+            let matchedCount = 0;
+            
+            // 重新建立選項
+            optgroups.forEach(group => {
+                const filteredOptions = group.options.filter(opt => {
+                    const matchesId = !idFilterValue || opt.username.toLowerCase().includes(idFilterValue);
+                    const matchesName = !nameFilterValue || opt.fullName.toLowerCase().includes(nameFilterValue);
+                    return matchesId && matchesName;
+                });
+                
+                // 只有當該班級有符合的學生時，才建立 optgroup
+                if (filteredOptions.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = group.label;
+                    
+                    filteredOptions.forEach(opt => {
+                        const newOption = opt.element.cloneNode(true);
+                        optgroup.appendChild(newOption);
+                        
+                        // 記錄第一個符合的選項
+                        if (!firstMatchedOptionValue) {
+                            firstMatchedOptionValue = opt.value;
+                        }
+                        matchedCount++;
+                    });
+                    
+                    studentSelect.appendChild(optgroup);
+                }
+            });
+            
+            // 如果只有一個符合的學生，自動選擇並 focus
+            if (matchedCount === 1 && firstMatchedOptionValue) {
+                studentSelect.value = firstMatchedOptionValue;
+                studentSelect.focus();
+            }
         }
+        
+        // 當使用者輸入學號或姓名時進行篩選
+        studentIdInput.addEventListener('input', filterStudents);
+        studentNameInput.addEventListener('input', filterStudents);
+        
+        // 清除篩選按鈕
+        clearFiltersBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            studentIdInput.value = '';
+            studentNameInput.value = '';
+            studentSelect.value = '';
+            filterStudents();
+            studentIdInput.focus();
+        });
+        
+        // 當選擇競賽時，自動提交表單以載入題目
+        contestSelect.addEventListener('change', function() {
+            if (this.value) {
+                problemSelect.value = '';
+                form.submit();
+            }
+        });
+        
+        // 應用語法高亮 - 確保 Prism 正確執行
+        function highlightCode() {
+            if (typeof Prism !== 'undefined' && Prism.highlightAll) {
+                try {
+                    // 檢查代碼塊的語言
+                    const codeBlock = document.querySelector('.prism-container code');
+                    if (codeBlock) {
+                        const langClass = codeBlock.className;
+                        const dataLang = codeBlock.getAttribute('data-language');
+                        console.log('✓ 代碼塊語言:', langClass, '| 數據屬性:', dataLang);
+                        
+                        // 語言名稱映射
+                        const langMap = {
+                            'c': 'language-c',
+                            'cpp': 'language-cpp',
+                            'c++': 'language-cpp',
+                            'java': 'language-java',
+                            'python': 'language-python',
+                            'python3': 'language-python',
+                            'javascript': 'language-javascript',
+                            'js': 'language-javascript',
+                        };
+                        
+                        // 如果語言名稱不在支持列表中，嘗試映射
+                        const currentLang = langClass.replace('language-', '').toLowerCase();
+                        if (langMap[currentLang] && langClass !== langMap[currentLang]) {
+                            console.warn('⚠ 語言名稱需要映射:', currentLang, '->', langMap[currentLang]);
+                            codeBlock.className = langMap[currentLang];
+                        }
+                    }
+                    
+                    Prism.highlightAll();
+                    console.log('✓ Prism 語法高亮已執行');
+                } catch (e) {
+                    console.error('Prism 高亮出錯:', e);
+                }
+            } else {
+                console.warn('⚠ Prism 未正確加載');
+            }
+        }
+        
+        // 立即執行一次
+        highlightCode();
+        
+        // 延遲執行
+        setTimeout(highlightCode, 100);
     });
     
-    // 應用語法高亮
-    document.addEventListener('DOMContentLoaded', (event) => {
-        Prism.highlightAll();
+    // 頁面完全加載後再次執行高亮
+    window.addEventListener('load', function() {
+        if (typeof Prism !== 'undefined' && Prism.highlightAll) {
+            setTimeout(function() {
+                Prism.highlightAll();
+                console.log('✓ 頁面加載完成，Prism 高亮已重新執行');
+            }, 200);
+        }
     });
 </script>
 
 <style>
-    pre {
-        background-color: #2d2d2d;
+    /* Prism 程式碼區域樣式 */
+    .prism-container {
+        background-color: #2d2d2d !important;
         border-radius: 5px;
-        padding: 15px;
+        padding: 15px !important;
+        margin: 0 !important;
     }
     
-    pre code {
-        color: #f8f8f2;
-        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        font-size: 14px;
-        line-height: 1.5;
+    /* 不需要設置 code 的 color，讓 Prism 的 token 自動著色 */
+    .prism-container code {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+        font-size: 14px !important;
+        line-height: 1.5 !important;
+        /* 移除 color 設置，讓 Prism 的著色規則生效 */
+    }
+    
+    /* 允許 Prism token 使用自己的顏色 */
+    .prism-container .token.comment,
+    .prism-container .token.prolog,
+    .prism-container .token.doctype,
+    .prism-container .token.cdata {
+        color: #7b7b7b !important;
+    }
+    
+    .prism-container .token.punctuation {
+        color: #ccc !important;
+    }
+    
+    .prism-container .token.property,
+    .prism-container .token.tag,
+    .prism-container .token.attr-name {
+        color: #e2777a !important;
+    }
+    
+    .prism-container .token.function {
+        color: #6196cc !important;
+    }
+    
+    .prism-container .token.number,
+    .prism-container .token.boolean {
+        color: #f08d49 !important;
+    }
+    
+    .prism-container .token.class-name,
+    .prism-container .token.constant {
+        color: #f8c555 !important;
+    }
+    
+    .prism-container .token.keyword {
+        color: #cc99cd !important;
+    }
+    
+    .prism-container .token.string {
+        color: #7ec699 !important;
+    }
+    
+    .prism-container .token.operator {
+        color: #67cdcc !important;
     }
     
     .card-header {
