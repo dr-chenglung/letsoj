@@ -2272,10 +2272,13 @@ def import_problems_from_excel(request):
 
 
 @staff_member_required
+@staff_member_required
 def student_code_viewer(request):
     """
     學生程式碼查閱系統
     管理者可以選擇學生、競賽、題目來查看學生提交的程式碼
+    支持按學號或姓名篩選學生
+    若不選擇題目，則顯示該次競賽的所有題目提交
     """
     # 獲取所有非管理員的使用者，按班級和帳號排序
     students = User.objects.filter(is_staff=False).order_by("user_class", "username")
@@ -2287,12 +2290,15 @@ def student_code_viewer(request):
     selected_student_id = request.GET.get("student_id")
     selected_contest_id = request.GET.get("contest_id")
     selected_problem_id = request.GET.get("problem_id")
+    student_id_input = request.GET.get("student_id_input", "").strip()
+    student_name_input = request.GET.get("student_name_input", "").strip()
 
     selected_student = None
     selected_contest = None
     selected_problem = None
     problems = []
     submission = None
+    submissions_list = []  # 用於顯示所有題目的提交
 
     # 如果選擇了競賽，獲取該競賽的題目
     if selected_contest_id:
@@ -2322,16 +2328,51 @@ def student_code_viewer(request):
         except Problem.DoesNotExist:
             messages.error(request, "找不到該題目")
 
-    # 如果三個條件都選擇了，查詢提交記錄
-    if selected_student and selected_contest and selected_problem:
-        try:
-            submission = Submission.objects.get(
-                submitted_by=selected_student,
-                contest=selected_contest,
-                problem=selected_problem,
+    # 邏輯：
+    # 1. 如果選了學生、競賽、題目 -> 顯示該題目的單一提交
+    # 2. 如果選了學生、競賽但沒選題目 -> 顯示該競賽所有題目的提交
+    # 3. 其他情況 -> 顯示空白
+    
+    if selected_student and selected_contest:
+        if selected_problem:
+            # 情況1：顯示單一題目的提交
+            try:
+                submission = Submission.objects.get(
+                    submitted_by=selected_student,
+                    contest=selected_contest,
+                    problem=selected_problem,
+                )
+            except Submission.DoesNotExist:
+                messages.warning(request, "該學生尚未提交此題目")
+        else:
+            # 情況2：顯示所有題目的提交
+            # 獲取該競賽的所有題目
+            contest_problems = (
+                ContestProblem.objects.filter(contest=selected_contest)
+                .select_related("problem")
+                .order_by("id_prblm_in_contest")
             )
-        except Submission.DoesNotExist:
-            messages.warning(request, "該學生尚未提交此題目")
+            
+            # 為每個題目查詢該學生的提交
+            for cp in contest_problems:
+                try:
+                    sub = Submission.objects.get(
+                        submitted_by=selected_student,
+                        contest=selected_contest,
+                        problem=cp.problem,
+                    )
+                    submissions_list.append({
+                        'problem': cp.problem,
+                        'submission': sub,
+                        'problem_seq': cp.id_prblm_in_contest,
+                    })
+                except Submission.DoesNotExist:
+                    # 若該題目未提交，也要在列表中顯示
+                    submissions_list.append({
+                        'problem': cp.problem,
+                        'submission': None,
+                        'problem_seq': cp.id_prblm_in_contest,
+                    })
 
     context = {
         "students": students,
@@ -2344,6 +2385,9 @@ def student_code_viewer(request):
         "selected_contest": selected_contest,
         "selected_problem": selected_problem,
         "submission": submission,
+        "submissions_list": submissions_list,
+        "student_id_input": student_id_input,
+        "student_name_input": student_name_input,
         "JudgeStatus": JudgeStatus,
     }
 
