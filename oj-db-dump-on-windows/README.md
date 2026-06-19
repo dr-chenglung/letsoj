@@ -32,7 +32,7 @@
 
 ```powershell
 # 切換到 oj-db-dump-on-windows 目錄
-cd C:\Users\clhuang\Documents\letsoj\oj-db-dump-on-windows
+cd C:\Users\user\Documents\letsoj\oj-db-dump-on-windows
 
 # 執行備份
 .\postgres-backup.ps1
@@ -93,7 +93,7 @@ Unregister-ScheduledTask -TaskName "PostgreSQL Auto Backup" -Confirm:$false
 
 ```powershell
 # 以系統管理員權限執行 PowerShell，然後：
-cd C:\Users\clhuang\Documents\letsoj\oj-db-dump-on-windows
+cd C:\Users\user\Documents\letsoj\oj-db-dump-on-windows
 .\setup-backup-schedule.ps1
 ```
 

@@ -45,7 +45,7 @@
 ### 立即開始
 
 ```powershell
-cd c:\Users\clhuang\Documents\letsoj
+cd c:\Users\user\Documents\letsoj
 
 # 構建並啟動（首次需要網路）
 docker-compose up --build -d
