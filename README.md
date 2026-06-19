@@ -18,9 +18,7 @@
 
 [Judge0](https://github.com/judge0/judge0)是一個開源的線上判題系統，包含有Judge0 CE與Judge0 Extra CE兩種版本，兩種版本提供的程式語言不同。
 
-[Judge0 Extra CE](https://github.com/judge0/judge0/tree/extra)提供的程式語言種類較少，包含Java, C, C++, C#, Python for ML等常見的初學者會學習的程式語言。
-
-此OJ採用Judge0 Extra CE 的 [版本1.13.0](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)。若需要其他未包含的程式語言判題，則必須修改程式改成使用Judge0 CE。
+此OJ採用Judge0 CE 的 [版本1.13.1](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)。
 
 備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
  
@@ -51,6 +49,9 @@ oj-postgres-db/postgres
 
 請定期經常備份資料庫，Ubuntu環境下，可以修改/etc/crontab檔案，進行定期備份到雲端硬碟。
 
+# 程式碼位置在letsoj目錄下
+oj-web/
+
 # 匯入範例題目、語言、題目主題、使用者等表格
 
 置放與範例資料表目錄中，匯入範例資料，可以快速熟悉OJ功能。
@@ -64,35 +65,18 @@ oj-postgres-db/postgres
 
 可以下載範例資料庫壓縮檔(尚未提供)，解壓縮置放於oj-postgres-db目錄下，啟動後即可快速熟悉OJ所有的功能。
 
-# 開發者程式碼
+# 正式佈署
 
-你可以啟動開發者模式，進行OJ系統程式開發  
-修改docker-compose.yml
-DEV_SERVER: true 
+可修改docker-compose.yaml
+DEV_SERVER: false # 不會啟動python manage.py runserver
 
-程式碼位置在letsoj目錄下:  
-oj-web/
+將oj-web 加上註解如下
+volumes
+    # - ./oj-web:/app  # 將這行加上註解
 
-會啟動python manage.py runserver，此模式下程式碼若有修改，會自動重新啟動oj-web容器，方便更新程式碼。
 
 目前程式碼仍是雛型階段，功能未盡完善，或許存在潛在的Bugs。但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
 
-
-# 生產（production）部署版本
-
-生產部署請使用 `docker-compose.prod.yaml`，與開發版 `docker-compose.yaml` 的主要差異如下：
-
-| 項目 | 開發版 (docker-compose.yaml) | 生產版 (docker-compose.prod.yaml) |
-| --- | --- | --- |
-| oj-web | `build: ./oj-web` | `image: clhuang/oj-web:latest` |
-| oj-web 程式碼掛載 | `- ./oj-web:/app` | 已移除（以 image 內程式碼為準） |
-| oj-web 伺服器 | `DEV_SERVER: true`（Django runserver） | `DEV_SERVER: false`（gunicorn） |
-| oj-nginx | `build: ./nginx` | `image: clhuang/oj-nginx:latest` |
-| oj-postgres 對外 port | `127.0.0.1:5432:5432` 開啟 | 預設註解關閉（需要 pgadmin 時才開） |
-
-啟動方式：
-
-    docker compose -f docker-compose.prod.yaml up -d
 
 # 管理者操作手冊
 已置放在documents卷夾中，可下載參考。
