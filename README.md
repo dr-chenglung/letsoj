@@ -22,16 +22,19 @@ Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其grou
 
  
 # 安裝
+```
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
 docker compose up
-
+```
 或是多個判題容器
+```
 docker compose up --scale workers=3
-
+```
 # 觀看OJ logs內容
+```
 docker compose logs -f
-
+```
 # 先要修改你的.env (參考.env.example)
 所有的帳號與密碼要寫在環境檔案裡面
 
@@ -60,12 +63,14 @@ oj-postgres-db/postgres
 # 正式佈署
 
 可修改docker-compose.yaml
+```
 DEV_SERVER: false # 不會啟動python manage.py runserver
-
-將oj-web 加上註解如下
+```
+將oj-web 加上註解如下:
+```
 volumes
     # - ./oj-web:/app  # 將這行加上註解
-
+```
 
 目前程式碼仍是雛型階段，功能未盡完善，或許存在潛在的Bugs。但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
 
