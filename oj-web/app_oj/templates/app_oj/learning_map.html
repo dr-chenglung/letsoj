@@ -1,0 +1,433 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}
+    學習地圖
+{% endblock page_title %}
+{% block page_content %}
+    <h2>基礎程式語言學習地圖</h2>
+    <div id="learning_sequence">
+        <h2 class="text-info">學習順序</h2>
+        <ol>
+            <li>變數、資料類型和運算子</li>
+            <li>控制流程陳述</li>
+            <li>迴圈</li>
+            <li>函數和方法</li>
+            <li>陣列</li>
+            <li>物件導向程式設計 (Object Oriented Programming)</li>
+            <li>資料結構和演算法</li>
+            <li>其他進階:檔案,例外捕捉,指標(C, C++)</li>
+        </ol>
+    </div>
+    <div id="topics">
+        <h2 class="text-info">各主題的學習建議</h2>
+        <h4>變數、資料類型和運算子</h4>
+        <ul>
+            <li>學習如何宣告變數</li>
+            <li>學習常見的資料類型，例如整數、浮點數、字串和布林值</li>
+            <li>學習如何使用運算子對資料進行運算</li>
+        </ul>
+        <h4>控制流程陳述</h4>
+        <ul>
+            <li>學習如何使用 if 判斷式根據條件執行不同的程式碼</li>
+            <li>學習如何使用 else 陳述提供 if 判斷式的另一種選擇</li>
+        </ul>
+        <h4>迴圈</h4>
+        <ul>
+            <li>學習如何使用 for 迴圈重複執行一段程式碼</li>
+            <li>學習如何使用 while 迴圈重複執行一段程式碼，直到條件為 false</li>
+        </ul>
+        <h4>函數和方法</h4>
+        <ul>
+            <li>學習如何定義函數和方法</li>
+            <li>學習如何呼叫函數和方法</li>
+            <li>學習如何使用參數傳遞資料給函數和方法</li>
+        </ul>
+        <h4>陣列</h4>
+        <ul>
+            <li>學習如何定義陣列</li>
+            <li>學習如何使用陣列</li>
+        </ul>
+        <h4>物件導向程式設計(OOP)</h4>
+        <ul>
+            <li>學習如何定義類</li>
+            <li>學習如何建立物件</li>
+            <li>學習如何使用繼承</li>
+            <li>學習如何使用介面</li>
+        </ul>
+        <h4>資料結構和演算法</h4>
+        <ul>
+            <li>學習常見的資料結構，例如陣列、連結串列、堆疊和佇列、樹狀結構</li>
+            <li>學習常見的演算法，例如排序、搜尋和雜湊</li>
+        </ul>
+        <h2 class="text-info">以Java為例，各單元範例</h2>
+        <div class="accordion" id="accordionExample">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingMath">
+                    <button class="accordion-button"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseMath"
+                            aria-expanded="true"
+                            aria-controls="collapseMath">數學運算</button>
+                </h2>
+                <div id="collapseMath"
+                     class="accordion-collapse collapse show"
+                     aria-labelledby="headingMath">
+                    <div class="accordion-body">
+                        <p>Java 支援基本的數學運算，包括加法、減法、乘法、除法和取餘數。以下是一些常見的數學運算範例：</p>
+                        <div class="code-block">
+                            <pre><code id="codeMath">public class Main {
+    public static void main(String[] args) {
+        int a = 10;
+        int b = 5;
+
+        // 加法
+        System.out.println("加法: " + (a + b)); // 輸出：15
+
+        // 減法
+        System.out.println("減法: " + (a - b)); // 輸出：5
+
+        // 乘法
+        System.out.println("乘法: " + (a * b)); // 輸出：50
+
+        // 除法
+        System.out.println("除法: " + (a / b)); // 輸出：2
+
+        // 取餘數
+        System.out.println("取餘數: " + (a % b)); // 輸出：0
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingIf">
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseIf"
+                            aria-expanded="false"
+                            aria-controls="collapseIf">if 判斷式</button>
+                </h2>
+                <div id="collapseIf"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="headingIf">
+                    <div class="accordion-body">
+                        <p>if 判斷式是一種控制流程的語句，讓程式根據特定條件執行不同的程式碼。當條件為真時，對應的程式碼區塊會被執行；如果條件為假，則可以選擇執行其他的程式碼（如 else 區塊）:</p>
+                        <div class="code-block">
+                            <pre><code id="codeIf">public class Main {
+    public static void main(String[] args) {
+        int score = 85; 
+
+        if (score >= 90) {
+            System.out.println("優秀");
+        } else if (score >= 80) {
+            System.out.println("良好");
+        } else if (score >= 70) {
+            System.out.println("中等");
+        } else if (score >= 60) {
+            System.out.println("及格");
+        } else {
+            System.out.println("不及格");
+        }
+    }
+}//輸出:良好 </code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseTwo"
+                            aria-expanded="false"
+                            aria-controls="collapseTwo">迴圈</button>
+                </h2>
+                <div id="collapseTwo"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="headingTwo">
+                    <div class="accordion-body">
+                        <p>迴圈是一種控制流程的結構，允許您重複執行一段程式碼，直到滿足特定條件。常見的迴圈有 for 迴圈、while 迴圈和 do-while 迴圈。以下是它們的說明和範例：</p>
+                        <!-- For 迴圈 -->
+                        <div class="code-block" style="margin-bottom: 20px;">
+                            <p>
+                                <strong>For 迴圈: 用於已知迴圈次數的情況。</strong>
+                            </p>
+                            <pre><code id="codeFor">public class Main {
+    public static void main(String[] args) {
+        for (int i = 0; i < 5; i++) {
+            System.out.print(i+" ");
+        }
+    }
+}//輸出: 0 1 2 3 4</code></pre>
+                        </div>
+                        <!-- While 迴圈 -->
+                        <div class="code-block" style="margin-bottom: 20px;">
+                            <p>
+                                <strong>While 迴圈: 用於條件不明的情況。</strong>
+                            </p>
+                            <pre><code id="codeWhile">public class Main {
+    public static void main(String[] args) {
+        int j = 0;
+        while (j < 5) {
+            System.out.print(j+" ");
+            j++;
+        }
+    }
+}//輸出: 0 1 2 3 4</code></pre>
+                        </div>
+                        <!-- Do-While 迴圈 -->
+                        <div class="code-block" style="margin-bottom: 20px;">
+                            <p>
+                                <strong>Do-While 迴圈: 至少執行一次的情況。</strong>
+                            </p>
+                            <pre><code id="codeDoWhile">public class Main {
+    public static void main(String(String[] args) {
+        int k = 0;
+        do {
+            System.out.print(k+" ");
+            k++;
+        } while (k < 5);
+    }
+}//輸出: 0 1 2 3 4</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingRandom">
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseRandom"
+                            aria-expanded="false"
+                            aria-controls="collapseRandom">亂數</button>
+                </h2>
+                <div id="collapseRandom"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="headingRandom">
+                    <div class="accordion-body">
+                        <p>
+                            java.lang 套件中的 Math 類別就定義了一個方法 random()，這個方法可以產生亂數，其型態為 double 。
+                            <p>Math.random();亂數的產生有一個範圍，它介於 0~1 之間，但是不等於 1 。</p>
+                            <p>求 0~9 之間的亂數:(int)(Math.random()*10)；</p>
+                            <div class="code-block">
+                                <pre><code id="codeRandom">public class Main {
+    public static void main(String[] args) {
+        double randomNum = Math.random();
+        System.out.println("隨機數: " + randomNum);
+    }
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingStatic">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseStatic"
+                                aria-expanded="false"
+                                aria-controls="collapseStatic">靜態方法</button>
+                    </h2>
+                    <div id="collapseStatic"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingStatic">
+                        <div class="accordion-body">
+                            <p>不用 "new" 就可以使用的方法，</p>
+                            <div class="code-block">
+                                <pre><code id="codeStatic">public class Main {
+    static int add(int a, int b) {
+        return a + b;
+    }
+
+    public static void main(String[] args) {
+        System.out.println("總和: " + add(5, 10));//呼叫靜態方法
+    }
+} // 輸出：15</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingArray1D">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseArray1D"
+                                aria-expanded="false"
+                                aria-controls="collapseArray1D">一維陣列</button>
+                    </h2>
+                    <div id="collapseArray1D"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingArray1D">
+                        <div class="accordion-body">
+                            <p>陣列是一種資料結構，用來儲存相同資料型態的變數。陣列中的每個變數都有一個索引，用來指定該變數在陣列中的位置。</p>
+                            <p>陣列可以用來儲存資料：陣列可以用來儲存各種資料，例如整數、浮點數、字串等。例如，可以使用陣列來儲存學生的成績、員工的資訊等。</p>
+                            <p>陣列可以用來實現各種資料結構：陣列可以用來實現各種資料結構，例如堆疊、佇列、連結串列等。例如，可以使用陣列來實現堆疊，使用陣列來實現佇列。</p>
+                            <div class="code-block">
+                                <pre><code id="codeArray1D">public class Main {
+    public static void main(String[] args) {
+        int[] numbers = {1, 2, 3, 4, 5};
+        for (int i = 0; i < numbers.length; i++) {
+            System.out.print(numbers[i] + " ");
+        }
+    }
+}
+// 輸出: 1 2 3 4 5</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingArray2D">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseArray2D"
+                                aria-expanded="false"
+                                aria-controls="collapseArray2D">二維陣列</button>
+                    </h2>
+                    <div id="collapseArray2D"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingArray2D">
+                        <div class="accordion-body">
+                            <p>二維陣列是儲存數據的結構，可以看作是由多個一維陣列組成的矩陣。它用行和列來組織數據，通過兩個索引訪問元素。</p>
+                            <div class="code-block">
+                                <pre><code id="codeArray2D">public class Main {
+    public static void main(String[] args) {
+        int[][] matrix = {
+            {1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 9}
+        };
+
+        for (int i = 0; i < matrix.length; i++) {  // 遍歷每一列
+            for (int j = 0; j < matrix[i].length; j++) {  // 遍歷每一列中的每個元素
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();  // 換行
+        }
+    }
+}
+// 輸出:
+// 1 2 3
+// 4 5 6
+// 7 8 9</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseFour"
+                                aria-expanded="false"
+                                aria-controls="collapseFour">自訂類別</button>
+                    </h2>
+                    <div id="collapseFour"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingFour">
+                        <div class="accordion-body">
+                            <p>是開發者定義的類別，描述特定對象的屬性和行為。類別包含屬性（變數）和方法（行為），並可使用建構子來初始化對象。</p>
+                            <div class="code-block">
+                                <pre><code id="codeFour">public class Dog {
+    String name;
+
+    Dog(String name) {
+        this.name = name;
+    }
+
+    void bark() {
+        System.out.println(name + " 叫：汪汪！");
+    }
+
+    public static void main(String[] args) {
+        Dog myDog = new Dog("小白");
+        myDog.bark(); 
+    }
+}// 輸出：小白 叫：汪汪！</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingInheritance">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseInheritance"
+                                aria-expanded="false"
+                                aria-controls="collapseInheritance">繼承</button>
+                    </h2>
+                    <div id="collapseInheritance"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingInheritance">
+                        <div class="accordion-body">
+                            <p>繼承是讓子類（subclass）從父類（superclass）繼承屬性和方法的機制，使用 extends 關鍵字實現。子類可以重用父類的代碼，並能新增或覆寫方法。</p>
+                            <div class="code-block">
+                                <pre><code id="codeInheritance">class Animal {
+    void sound() {
+        System.out.println("動物發出聲音");
+    }
+}
+
+class Dog extends Animal {
+    @Override
+    void sound() {
+        System.out.println("狗吠：汪汪！");
+    }
+
+    public static void main(String[] args) {
+        Dog dog = new Dog();
+        dog.sound(); 
+    }
+}// 輸出：狗吠：汪汪！</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingAbstractInheritance">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapseAbstractInheritance"
+                                aria-expanded="false"
+                                aria-controls="collapseAbstractInheritance">抽象類別</button>
+                    </h2>
+                    <div id="collapseAbstractInheritance"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingAbstractInheritance">
+                        <div class="accordion-body">
+                            <p>不能直接實例化，使用 abstract 關鍵字。，只能通過子類實現後來實例化</p>
+                            <div class="code-block">
+                                <pre><code id="codeAbstractInheritance">abstract class Animal {
+    abstract void sound();
+}
+
+class Dog extends Animal {
+    void sound() {
+        System.out.println("狗吠：汪汪！");
+    }
+
+    public static void main(String[] args) {
+        Dog dog = new Dog();
+        dog.sound(); 
+    }
+}// 輸出：狗吠：汪汪！</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock page_content %}
+{% block link_css %}
+{% endblock link_css %}

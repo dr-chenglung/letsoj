@@ -1,0 +1,25 @@
+# 機密設定(含資料庫密碼、Django secret key)
+.env
+*.env
+!.env.example
+
+# 資料庫實體資料(不該進版控)
+oj-postgres-db/
+oj-postgres-dump-backup/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Django
+staticfiles/
+*.log
+media/
+
+# 編輯器 / 系統
+.vscode/
+.DS_Store
+Thumbs.db

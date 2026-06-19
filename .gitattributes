@@ -1,0 +1,30 @@
+# Git attributes for line ending and text handling
+# This file controls how Git handles different file types
+
+# Default: auto-detect text files and normalize line endings
+* text=auto
+
+# Force LF (Unix line endings) for scripts and config files
+# These are often executed in containers or Unix environments
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.conf text eol=lf
+
+# Binary files: disable text processing
+*.jpg -text
+*.png -text
+*.gif -text
+*.zip -text
+*.tar.gz -text
+*.pdf -text
+
+# Docker and container-related files
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# SQL and database files
+*.sql text eol=lf

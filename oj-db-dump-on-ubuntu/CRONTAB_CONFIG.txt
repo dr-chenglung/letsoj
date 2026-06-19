@@ -1,0 +1,42 @@
+# PostgreSQL 多層級備份 Crontab 配置
+# 
+# 用於 Ubuntu 系統，需要在 crontab -e 中設置以下任務
+
+# 1. 每10分鐘備份一次（下一個小時同時段會覆蓋）
+# 格式: 分鐘 小時 日 月 週 命令
+*/10 * * * * /home/chen/letsoj/oj-db-dump-on-ubuntu/backup_10min.sh
+
+# 2. 每小時第0分鐘備份一次（第二天同時段會覆蓋）
+0 * * * * /home/chen/letsoj/oj-db-dump-on-ubuntu/backup_hourly.sh
+
+# 3. 每天21:30備份一次（保留最近7天）
+30 21 * * * /home/chen/letsoj/oj-db-dump-on-ubuntu/backup_daily_7day.sh
+
+
+
+# ============ 設置方式 ============
+# 1. 先上傳三個 .sh 檔案到 Ubuntu 的 /home/tom/letsoj/oj-db-dump-on-ubuntu/ 目錄
+# 
+# 2. 使用以下命令進入 crontab 編輯:
+#    crontab -e
+#
+# 3. 將上述三行加入 crontab 
+#
+# 4. 給予執行權限:
+#    chmod +x /home/tom/letsoj/oj-db-dump-on-ubuntu/backup_10min.sh
+#    chmod +x /home/tom/letsoj/oj-db-dump-on-ubuntu/backup_hourly.sh
+#    chmod +x /home/tom/letsoj/oj-db-dump-on-ubuntu/backup_daily_7day.sh
+#
+# 5. 驗證 crontab 已設置:
+#    crontab -l
+#
+# ============ 備份檔案位置 ============
+# Destination: Google clould
+# 10分鐘備份: postgres_10min_MM.zip
+# 每小時備份: postgres_hourly_HH.zip
+# 每日備份:   postgres_daily_YYYY-MM-DD.zip
+#
+# ============ 覆蓋規則 ============
+# • 10分鐘: 每10分鐘自動更新一次，下一個小時同時段會完全覆蓋 (如 14:30 → 15:30)
+# • 每小時: 每小時第0分更新一次，第二天同時段會完全覆蓋 (如今天14點 → 明天14點)
+# • 每日7天: 21:30執行，自動刪除超過7天的舊檔案

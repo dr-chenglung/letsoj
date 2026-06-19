@@ -1,0 +1,265 @@
+{% extends "app_management/base_management.html" %}
+{% block page_title %}
+  競賽匯入
+{% endblock page_title %}
+{% block page_content %}
+  <div class="row mt-3 mb-4">
+    <div class="col-12">
+      <h3>
+        <i class="fas fa-file-upload me-2" style="color: #feca57;"></i>競賽匯入(注意:會覆蓋既有競賽與題目資料)
+      </h3>
+      <p class="text-muted">從 JSON 檔案匯入競賽資料，包含競賽資訊和相關題目。注意: 競賽編號 (id) 會用於比對，若已存在則會取代既有資料，務必要確認現有的資料是否仍要保留!</p>
+    </div>
+  </div>
+
+  {% if import_result %}
+    <!-- 匯入結果顯示 -->
+    <div class="row">
+      <div class="col-12">
+        <div class="alert alert-info">
+          <strong>調試信息：</strong> import_result 已成功傳遞到模板
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm border-success">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-check-circle me-2"></i>競賽匯入完成
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-success mb-3">
+                  <i class="fas fa-trophy me-2"></i>競賽資訊
+                </h6>
+                <table class="table table-sm">
+                  <tr>
+                    <td class="fw-bold">競賽編號：</td>
+                    <td>{{ import_result.contest.id }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">競賽名稱：</td>
+                    <td>{{ import_result.contest.title }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">開始時間：</td>
+                    <td>{{ import_result.contest.start_time|date:"Y-m-d H:i" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">結束時間：</td>
+                    <td>{{ import_result.contest.end_time|date:"Y-m-d H:i" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">公開競賽：</td>
+                    <td>
+                      {% if import_result.contest.is_public %}
+                        <span class="badge bg-success">是</span>
+                      {% else %}
+                        <span class="badge bg-secondary">否</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-chart-bar me-2"></i>匯入統計
+                </h6>
+                <table class="table table-sm">
+                  <tr>
+                    <td class="fw-bold">題目匯入：</td>
+                    <td>
+                      <span class="text-success">{{ import_result.imported_problems }} 成功</span>
+                      {% if import_result.failed_problems > 0 %}
+                        ，<span class="text-danger">{{ import_result.failed_problems }} 失敗</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">競賽配置：</td>
+                    <td>
+                      <span class="text-success">{{ import_result.imported_contest_problems }} 成功</span>
+                      {% if import_result.failed_contest_problems > 0 %}
+                        ，<span class="text-danger">{{ import_result.failed_contest_problems }} 失敗</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">處理類別：</td>
+                    <td>{{ import_result.categories_created }} 個新類別</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">覆蓋操作：</td>
+                    <td>
+                      {% if import_result.was_overwritten %}
+                        <span class="badge bg-warning">已覆蓋</span>
+                      {% else %}
+                        <span class="badge bg-info">新建立</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <a href="{% url 'contest_list_manage' %}" class="btn btn-primary me-2">
+                <i class="fas fa-list me-2"></i>查看競賽列表
+              </a>
+              <a href="{% url 'problem_list' %}" class="btn btn-secondary me-2">
+                <i class="fas fa-book me-2"></i>查看題目列表
+              </a>
+              <a href="{% url 'import_contest_and_problems' %}" class="btn btn-outline-success">
+                <i class="fas fa-plus me-2"></i>匯入其他競賽
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <!-- 正常匯入表單 -->
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-upload me-2"></i>上傳競賽檔案
+            </h5>
+          </div>
+          <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="importForm">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label for="contest_metadata_file" class="form-label fw-bold">
+                  <i class="fas fa-info-circle me-2" style="color: #4facfe;"></i>競賽元資料檔案 <span class="text-danger">*</span>
+                </label>
+                <input type="file"
+                       class="form-control"
+                       id="contest_metadata_file"
+                       name="contest_metadata_file"
+                       accept=".json"
+                       required>
+                <div class="form-text">
+                  <i class="fas fa-info-circle me-1"></i>選擇 <code>contest_metadata_{競賽編號}.json</code>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="problems_file" class="form-label fw-bold">
+                  <i class="fas fa-book me-2" style="color: #f093fb;"></i>題目資料檔案 <span class="text-danger">*</span>
+                </label>
+                <input type="file"
+                       class="form-control"
+                       id="problems_file"
+                       name="problems_file"
+                       accept=".json"
+                       required>
+                <div class="form-text">
+                  <i class="fas fa-info-circle me-1"></i>選擇 <code>contest_problems_{競賽編號}.json</code>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="contest_problems_file" class="form-label fw-bold">
+                  <i class="fas fa-cogs me-2" style="color: #f9ca24;"></i>競賽題目配置檔案 <span class="text-danger">*</span>
+                </label>
+                <input type="file"
+                       class="form-control"
+                       id="contest_problems_file"
+                       name="contest_problems_file"
+                       accept=".json"
+                       required>
+                <div class="form-text">
+                  <i class="fas fa-info-circle me-1"></i>選擇 <code>contest_problems_config_{競賽編號}.json</code>
+                </div>
+              </div>
+
+              <div class="card border-warning mb-3">
+                <div class="card-header bg-warning text-dark">
+                  <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>重要提醒
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <ul class="mb-0">
+                    <li>競賽與題目皆以<strong>原始編號 (id) 比對</strong>：已存在則<strong>取代（覆蓋內容並沿用原 id）</strong>，不存在則新建</li>
+                    <li>取代競賽時<strong>不會刪除競賽本身</strong>，因此該競賽既有的<strong>提交與排名會完整保留</strong></li>
+                    <li>競賽的題目關聯會先清空再依匯入內容重建，避免重複或殘留的題目關聯</li>
+                    <li>題目會一併處理類別與語言設定；匯入過程中單筆錯誤會被跳過並記錄</li>
+                    <li>建議先在測試環境測試匯入功能</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success btn-lg">
+                  <i class="fas fa-file-upload me-2"></i>開始匯入
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card shadow-sm border-danger">
+          <div class="card-header bg-danger text-white">
+            <h6 class="mb-0">
+              <i class="fas fa-shield-alt me-2"></i>匯入前檢查清單
+            </h6>
+          </div>
+          <div class="card-body">
+            <ul class="small mb-0">
+              <li class="mb-2">
+                <i class="fas fa-check text-success me-1"></i>確認競賽編號 (id)：若已經有相同的ID，則會被取代既有競賽與題目資料，請務必確認是否要覆蓋現有資料。
+              </li>
+              <li class="mb-2">
+                <i class="fas fa-check text-success me-1"></i>所有JSON檔案來自同一競賽的匯出。
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-info mt-3">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0">
+              <i class="fas fa-history me-2"></i>使用場景
+            </h6>
+          </div>
+          <div class="card-body small">
+            <ul class="mb-0">
+              <li class="mb-2">
+                <i class="fas fa-copy me-1 text-primary"></i>複製競賽與題目到新系統
+              </li>
+            </ul>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  {% endif %}
+
+  {% if messages %}
+    <div class="row mt-3">
+      <div class="col-12">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible persistent-alert" role="alert">
+            {% if message.tags == 'success' %}
+              <i class="fas fa-check-circle me-2"></i>
+            {% else %}
+              <i class="fas fa-exclamation-triangle me-2"></i>
+            {% endif %}
+            {{ message|safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock page_content %}
