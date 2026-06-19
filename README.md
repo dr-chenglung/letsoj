@@ -8,7 +8,7 @@
 
 每個模組皆安裝運行在Docker容器(container)內。  
 
-建議使用作業系統是Ubuntu20.02。
+Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
 
 若是使用Windows系統的Docker進行安裝也可以，但是OJ無法進行考試IP管制，其餘功能皆可正常運作。
 
@@ -20,7 +20,6 @@
 
 此OJ採用Judge0 CE 的 [版本1.13.1](https://github.com/judge0/judge0/blob/master/CHANGELOG.md#deployment-procedur)。
 
-備註:  Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其groups v1相容設定([連結](https://github.com/judge0/judge0/issues/325))
  
 # 安裝
 git clone https://github.com/dr-chenglung/letsoj.git  
@@ -30,18 +29,11 @@ docker compose up
 或是多個判題容器
 docker compose up --scale workers=3
 
-# 管理者進入OJ系統
-在瀏覽器輸入: localhost或是你的IP  
-
-點選"登入"  
-
-帳號 admin  
-預設密碼: ojadmin 
-
-注意: 登入後請立即修改管理者密碼
-
 # 觀看OJ logs內容
 docker compose logs -f
+
+# 先要修改你的.env (參考.env.example)
+所有的帳號與密碼要寫在環境檔案裡面
 
 # 資料庫位置
 在letsoj目錄下:  
