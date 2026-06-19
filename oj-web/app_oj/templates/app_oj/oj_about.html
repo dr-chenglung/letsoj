@@ -1,0 +1,54 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}
+    about GoOJ
+{% endblock page_title %}
+{% block page_content %}
+    <h1 class="text-primary">初學程式語言的線上考試與繳交作業平台</h1>
+    <h5 class="text-info">Let's go code together!</h5>
+    <p>這個平台專門為程式設計課程而開發，提供以下功能：</p>
+    <ul>
+        <li>繳交作業：每周都要刷題，必須在期限內透過OJ平台完成提交。</li>
+        <li>線上考試：可在任何地點參加線上考試。</li>
+        <li>實體考試：到教室來實體上機考，可以限制登入IP，以及限制使用者只能單一登入。</li>
+    </ul>
+    
+    <h3 class="text-info">刷題建議</h3>
+    <p>一定要親自做每一道題目，盡量不要參考別人的程式碼、先不要問ChatGPT,Gemini或Copilot等AI語言模型，自己思考整個程式的流程與架構，逐字打出程式碼，熟能生巧，一段時間之後你就會變成高手。若過程中有不清楚的疑問，可以來問老師、助教或同學，當然，最方便的還是去問AI語言模型。</p>
+    <h3 class="text-info">提交結果</h3>
+    <ul>
+        <li>
+            <span class="badge bg-success">Accepted</span>：真開心！你的答案通過測資的考驗。
+        </li>
+        <li>
+            <span class="badge bg-danger">Wrong Answer</span>：答案錯了。
+        </li>
+        <li>
+            <span class="badge bg-warning">Compilation Error</span>：編譯或執行期間錯誤，程式碼編譯不通過，語法格式不對，陣列 index 超出範圍等。
+        </li>
+        <li>
+            <span class="badge bg-info">Time limit exceeded (TLE)</span>：程式執行超出時間，可能你的程式陷入無窮迴圈。
+        </li>
+    </ul>
+    <h3 class="text-info">排名</h3>
+    <ul>
+        <li>總排名是依據答對題數，若答對題數相同，則依據"平均每題完成時間"排名</li>
+        <li>每完成一題都會將考試開始到提交的完成的時間記錄起來，稱為成功提交總時間，將之除以題數就是"平均每題完成時間"</li>
+        <li>上機考試將視情況對滿分者進行排名加權計分，考前會先公告。</li>
+    </ul>
+    <h3 class="text-info">常見錯誤</h3>
+    <ul>
+        <li>Java: public class Main 類別名稱忘記更改成 Main，還有import 的套件忘記貼上</li>
+        <li>輸出格式不正確，例如：</li>
+        <ul>
+            <li>有多餘的文字。</li>
+            <li>輸出小數點後幾位的數字不對。</li>
+            <li>尤其是空格與換行的問題（最不容易發現）。</li>
+        </ul>
+        <li>一定要先確定在IDE的輸出格式與題目要求的一樣才複製過來提交。</li>
+    </ul>
+    <h3 class="text-info">寫漂亮的程式碼</h3>
+    <ul>
+        <li>OJ只會看答案對不對，不會看程式寫得好不好。</li>
+        <li>程式碼寫得好不好雖不影響成績，請同學將程式碼寫得最有效率、最容易閱讀，現在開始培養你的專業能力，「養成良好習慣，寫漂亮的程式碼!」</li>
+    </ul>
+{% endblock page_content %}

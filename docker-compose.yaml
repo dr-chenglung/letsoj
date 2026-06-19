@@ -1,0 +1,180 @@
+# 以下目錄必須先安排，與docker-compose.yml置放在同一個本地目錄容易管理
+# (1) judge0-v1.13.1目錄有judge0.conf設定檔 (此檔案自judge0官網下載，有修改檔案大小限制設定)
+# (2) nginx目錄有nginx.conf設定檔 (直接用官方image，以volume掛載此設定檔)
+# (3) oj-web目錄置放django專案的程式碼 (開發階段build: ./oj-web)
+# (4) oj-postgres-db目錄下置放postegres整個OJ的資料庫，方便備份與轉移
+
+# 時區設定: 這裡請修改成你的時區
+x-timezone: &default-timezone
+  TZ: ${TZ:-Asia/Taipei}
+
+#### Judge0設定 #############
+# 修改自judge0之docker-compose.yml
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 1m
+services:
+  server: # 容器名稱server，提交程式時會用到:'http://server:2358/submissions/'
+    image: judge0/judge0:latest
+    volumes:
+      - ./judge0-v1.13.1/judge0.conf:/judge0.conf:ro
+      # 放在當下目錄，必需能讓容器讀取，否則無法啟動
+    expose:
+      - "2358"  # expose the port in the docker internally
+    environment:
+      # 時區設定
+      <<: *default-timezone    # Keep timezone setting
+
+    privileged: true
+    <<: *default-logging
+    restart: always
+
+  workers:
+    image: judge0/judge0:latest
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0-v1.13.1/judge0.conf:/judge0.conf:ro
+    privileged: true
+    <<: *default-logging
+    restart: always
+
+  db:
+    image: postgres:16.2
+    env_file: ./judge0-v1.13.1/judge0.conf
+    volumes:
+      # 這是judge0用到的資料庫
+      - judge0-postgres-data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: always
+
+  redis:
+    image: redis:7.2.4
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: ./judge0-v1.13.1/judge0.conf
+    volumes:
+      - judge0-redis-data:/data
+    <<: *default-logging
+    restart: always
+
+  #### For OJ project ###############
+  oj-postgres:
+    image: postgres:16.2
+    container_name: oj-postgres # Django setting.py的資料庫設定與這個名稱需一致
+    restart: always
+    expose:
+      - 5432  # expose the port in the docker internally
+    volumes:
+      # 這是OJ專案用到的資料庫，放在本地端方便備份與轉移，注意權限問題
+      # 若資料庫卷夾放在local google drive可能會因為權限問題無法讓容器啟動
+      - ./oj-postgres-db/postgres:/var/lib/postgresql/data 
+
+    # 讀取 .env 文件，將其加入 .gitignore
+    environment:
+      # Postgres db 在setting.py中會用到此帳號密碼
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # 時區設定
+      <<: *default-timezone    # Keep timezone setting
+      
+    # healthcheck: Monitors container health status 
+    # Automatic container restart if unhealthy 若資料庫啟動失敗，會自動重啟
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onlinejudge"]  # Check if DB accepts connections
+      interval: 10s    # Time between checks
+      timeout: 5s      # Time to wait for response
+      retries: 5       # Number of consecutive failures needed to report unhealthy
+      start_period: 30s # Initial grace period
+
+  oj-web:
+    container_name: oj-web
+    build: ./oj-web
+    volumes:
+      # 開發階段:置放在本地端的程式碼，修改這裡的程式碼，等於是修改容器內的程式碼，會讓伺服器重新啟動，方便修改與測試
+      # 生產階段可以不掛載本機程式碼 (./oj-web:/app)，image建立完成之後，就不再需要這個卷夾程式碼了。
+      - ./oj-web:/app
+
+      # 掛載到volume，讓nginx容器可以共用存取static files
+      - static_volume:/app/staticfiles/
+    # 不開放給外部查訪，只能透過nginx查訪
+    expose:
+      - 8000
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+    # These variables are for Django database configure in setting.py
+    # They should be the same as the postgres db variables
+    environment:
+      # 在setting.py中會用到，必須與oj-postgres容器的POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD一致
+      POSTGRES_DB: ${POSTGRES_DB}  # Django用到的資料庫名稱，對應.env的POSTGRES_DB
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY} # Django secret key，對應.env的DJANGO_SECRET_KEY
+
+      # 允許的Host清單，對應.env的DJANGO_ALLOWED_HOSTS，否則用IP/域名連線會出現400 DisallowedHost
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+
+      # Django superuser 創建第一個管理者帳號
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+
+      # Django setting.py中資料庫設定用到的變數，OJDB_HOST對應oj-postgres容器名稱，OJDB_PORT對應oj-postgres容器的port
+      OJDB_HOST: oj-postgres # 資料庫容器名稱
+      OJDB_PORT: 5432 # 資料庫容器的port
+
+      # 時區設定
+      <<: *default-timezone    # Keep timezone setting
+
+      # 是否要在entrypoint.sh啟動Django的伺服器python manage.py runserver
+      # true:啟動 (開發階段比較方便)。false:不啟動
+      DEV_SERVER: true  
+
+    restart: always
+    # 這個容器要等到oj-postgres容器啟動完成後才啟動
+    depends_on:
+      oj-postgres: 
+        condition: service_healthy
+
+  # nginx
+  oj-nginx:
+    container_name: oj-nginx
+
+    # 直接使用官方 nginx image，設定檔以 volume 掛載 ./nginx 進去即可
+    image: nginx:1.27.0
+
+    ports:
+      # 公開IP可以查訪
+      - 80:80
+      #- 127.0.0.1:80:80 # 只能用localhost查訪(內部開發階段，暫時不公開)
+    environment:
+      # 時區設定
+      <<: *default-timezone    # Keep timezone setting
+
+    volumes:
+      # nginx設定檔
+      - ./nginx:/etc/nginx/conf.d
+
+      # 讓nginx容器可以存取到static files
+      - static_volume:/app/staticfiles/
+    restart: always  
+    depends_on:
+      - oj-web
+
+# 將幾個資料讓docker管理暴露在docker的volumes管理功能
+volumes:
+  # These two are for judge0
+  judge0-postgres-data:
+  judge0-redis-data:
+  # This is for nginx and oj-web
+  # static_volume:可以將兩處static_volume共用，方便nginx與oj-web存取
+  static_volume:
