@@ -9,7 +9,7 @@
 ### 1️⃣ 首次啟動（需要網路）
 
 ```bash
-cd c:\Users\clhuang\Documents\letsoj
+cd c:\Users\user\Documents\letsoj
 
 # 構建並啟動容器
 docker-compose up --build -d
