@@ -1,0 +1,74 @@
+/* ==========================================================================
+   LetsOJ — 全站基礎樣式 (app.css)
+   ========================================================================== */
+
+:root {
+  --app-bg: #f8f9fa;
+  --app-ink: #333;
+  --app-heading: #2c3e50;
+  --app-link: #5b6ef5;
+  --app-link-hover: #4453d6;
+  --app-border: #edf2f7;
+}
+
+body {
+  background-color: var(--app-bg);
+  /* 繁體優先：Windows 正黑體、macOS 蘋方、Linux Noto；字形正確不撞簡體 */
+  font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', Tahoma, Geneva, Verdana, sans-serif;
+  /* 
+  雅黑體 YaHei 較粗，筆畫厚實但字形偏簡體，容易撞簡體字形
+  微軟正黑體 Microsoft JhengHei 筆畫較細，預設400，可以補一點字重讓筆畫厚實一些:
+  font-weight: 700;
+  */
+
+  color: var(--app-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 導覽列 ------------------------------------------------------------------ */
+.navbar {
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+}
+.navbar-brand {
+  font-weight: 600;
+  color: var(--app-heading);
+}
+
+/* 卡片 -------------------------------------------------------------------- */
+.card {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .05);
+  margin-bottom: 20px;
+}
+.card-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--app-border);
+  font-weight: 600;
+}
+
+/* 版面 -------------------------------------------------------------------- */
+.container {
+  margin-top: 30px;
+}
+
+/* 連結與互動元件（全站一致基調） ------------------------------------------ */
+a {
+  color: var(--app-link);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--app-link-hover);
+  text-decoration: underline;
+}
+
+.table {
+  --bs-table-bg: transparent;
+}
+
+.btn {
+  border-radius: 8px;
+}
