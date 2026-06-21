@@ -15,13 +15,14 @@
           rel="stylesheet" />
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+    <link href="{% static 'css/app.css' %}" rel="stylesheet" />
     {% block link_css %}
     {% endblock link_css %}
   </head>
   <body>
     <div class="container">
       <div class="row mt-2">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <nav class="navbar navbar-expand-lg navbar-light">
           <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="/" style="font-size: 1.5rem;">
               <i class="fas fa-rocket" style="color: #f093fb;"></i>
