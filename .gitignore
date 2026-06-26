@@ -7,6 +7,10 @@
 oj-postgres-db/
 oj-postgres-dump-backup/
 
+# TLS 憑證與私鑰(機密，不可進版控)，只保留說明用的 README
+nginx/certs/*
+!nginx/certs/README.md
+
 # Python
 __pycache__/
 *.py[cod]

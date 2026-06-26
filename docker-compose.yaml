@@ -123,6 +123,12 @@ services:
       # 允許的Host清單，對應.env的DJANGO_ALLOWED_HOSTS，否則用IP/域名連線會出現400 DisallowedHost
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
 
+      # 是否啟用 HTTPS 安全設定。正式機(HTTPS由上游代理處理)設 true；純 HTTP 臨時機設 false。
+      USE_HTTPS: ${USE_HTTPS:-false}
+
+      # 是否開啟 Django DEBUG。開發設 true；正式環境務必維持 false。
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+
       # Django superuser 創建第一個管理者帳號
       DJANGO_SUPERUSER_USERNAME: admin
       DJANGO_SUPERUSER_EMAIL: admin@example.com
@@ -161,8 +167,13 @@ services:
       <<: *default-timezone    # Keep timezone setting
 
     volumes:
-      # nginx設定檔
-      - ./nginx:/etc/nginx/conf.d
+      # nginx設定檔: 用 NGINX_CONF 環境變數挑選載入哪一份(放在 ./nginx 目錄)
+      #   預設 nginx.conf (純HTTP，適用臨時IP伺服器/上游代理)
+      #   nginx-ssl.conf (由本機nginx終結TLS，需搭配 USE_HTTPS=true 與 ./nginx/certs 憑證)
+      - ./nginx/${NGINX_CONF:-nginx.conf}:/etc/nginx/conf.d/default.conf:ro
+
+      # TLS 憑證目錄(純HTTP時此資料夾為空也無妨，不影響啟動)
+      - ./nginx/certs:/etc/nginx/certs:ro
 
       # 讓nginx容器可以存取到static files
       - static_volume:/app/staticfiles/

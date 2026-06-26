@@ -9,9 +9,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# 預設 false，正式環境務必維持關閉；開發時在 .env 設 DJANGO_DEBUG=true
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# 是否啟用 HTTPS 相關安全設定。
+# 正式機（HTTPS 由上游/外部代理處理）設 true；臨時的純 HTTP 伺服器設 false。
+# 預設 false，確保在沒有 HTTPS 的環境程式仍可正常運作。
+USE_HTTPS = os.environ.get("USE_HTTPS", "false").lower() == "true"
+
+if USE_HTTPS:
+    # 上游代理解密後，靠這個 header 讓 Django 知道原始請求是 HTTPS
+    # （需搭配 nginx 轉發 X-Forwarded-Proto，見 nginx/nginx.conf）
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # 把 HTTP 轉到 HTTPS（HTTP-only 環境若開啟會無限轉址，所以放在開關內）
+    SECURE_SSL_REDIRECT = True
+    # cookie 只在 HTTPS 送出（HTTP-only 環境若開啟會導致登入失敗）
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS：要求瀏覽器之後只走 HTTPS
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# 依 USE_HTTPS 自動帶入正確 scheme，從 ALLOWED_HOSTS 推導，免得另外維護一份清單。
+# Django 4.0+ 對跨來源 POST 需要這份名單含 scheme，否則可能出現 403 CSRF。
+CSRF_TRUSTED_ORIGINS = [
+    f"{'https' if USE_HTTPS else 'http'}://{host}" for host in ALLOWED_HOSTS
+]
 
 # Application definition
 INSTALLED_APPS = [
