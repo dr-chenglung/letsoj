@@ -12,7 +12,12 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 # 預設 false，正式環境務必維持關閉；開發時在 .env 設 DJANGO_DEBUG=true
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# 容忍逗號前後的空白，並濾掉空項目，避免 .env 排版造成 DisallowedHost
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
 
 # 是否啟用 HTTPS 相關安全設定。
 # 正式機（HTTPS 由上游/外部代理處理）設 true；臨時的純 HTTP 伺服器設 false。
