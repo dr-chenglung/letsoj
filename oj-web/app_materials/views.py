@@ -85,8 +85,7 @@ def browse(request):
     })
 
 
-def serve_file(request):
-    rel_path = request.GET.get("path", "")
+def serve_file(request, rel_path):
     target = resolve_within_root(rel_path)
     if not target.is_file():
         raise Http404("Not a file")

@@ -1,7 +1,11 @@
 import tempfile
 from pathlib import Path
 
+from django.http import Http404
 from django.test import SimpleTestCase, override_settings
+from django.urls import reverse
+
+from app_materials.views import resolve_within_root
 
 
 class MaterialsTestBase(SimpleTestCase):
@@ -19,43 +23,46 @@ class MaterialsTestBase(SimpleTestCase):
         p.write_bytes(content)
         return p
 
+    def file_url(self, rel):
+        return reverse("materials_file", args=[rel])
+
 
 class ServeFileTests(MaterialsTestBase):
     def test_pdf_served_inline(self):
         self.write("講義.pdf", b"%PDF-1.4 fake")
-        resp = self.client.get("/materials/file", {"path": "講義.pdf"})
+        resp = self.client.get(self.file_url("講義.pdf"))
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp["Content-Disposition"].startswith("inline"))
         self.assertIn("UTF-8''", resp["Content-Disposition"])
 
     def test_doc_served_as_attachment(self):
         self.write("作業.doc", b"fake")
-        resp = self.client.get("/materials/file", {"path": "作業.doc"})
+        resp = self.client.get(self.file_url("作業.doc"))
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp["Content-Disposition"].startswith("attachment"))
 
-    def test_path_traversal_returns_404(self):
-        resp = self.client.get("/materials/file", {"path": "../settings.py"})
-        self.assertEqual(resp.status_code, 404)
+    def test_path_traversal_raises_404(self):
+        with self.assertRaises(Http404):
+            resolve_within_root("../settings.py")
 
     def test_missing_file_returns_404(self):
-        resp = self.client.get("/materials/file", {"path": "nope.pdf"})
+        resp = self.client.get(self.file_url("nope.pdf"))
         self.assertEqual(resp.status_code, 404)
 
     def test_directory_path_returns_404(self):
         (self.root / "sub").mkdir()
-        resp = self.client.get("/materials/file", {"path": "sub"})
+        resp = self.client.get(self.file_url("sub"))
         self.assertEqual(resp.status_code, 404)
 
     def test_image_served_inline(self):
         self.write("圖.png", b"fakepng")
-        resp = self.client.get("/materials/file", {"path": "圖.png"})
+        resp = self.client.get(self.file_url("圖.png"))
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp["Content-Disposition"].startswith("inline"))
 
     def test_disallowed_extension_returns_404(self):
         self.write("desktop.ini", b"junk")
-        resp = self.client.get("/materials/file", {"path": "desktop.ini"})
+        resp = self.client.get(self.file_url("desktop.ini"))
         self.assertEqual(resp.status_code, 404)
 
 

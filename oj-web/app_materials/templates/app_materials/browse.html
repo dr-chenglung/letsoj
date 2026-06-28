@@ -37,7 +37,7 @@
       {% endfor %}
       {% for f in files %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{% url 'materials_file' %}?path={{ f.path|urlencode }}"
+          <a href="{% url 'materials_file' f.path %}"
              {% if f.inline %}target="_blank"{% endif %}>
             {% if f.ext == '.pdf' %}
               <i class="fas fa-file-pdf" style="color:#e74c3c;"></i>
