@@ -31,3 +31,6 @@ oj-web/course_materials/*
 .vscode/
 .DS_Store
 Thumbs.db
+
+# 開發規劃文件(spec/plan)，保留在本機、不進版控
+docs/
