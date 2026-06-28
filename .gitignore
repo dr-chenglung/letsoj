@@ -5,7 +5,9 @@
 
 # 資料庫實體資料(不該進版控)
 oj-postgres-db/
-oj-postgres-dump-backup/
+# 備份目錄保留空目錄佔位，裡面的備份檔不進版控
+oj-postgres-dump-backup/*
+!oj-postgres-dump-backup/.gitkeep
 
 # TLS 憑證與私鑰(機密，不可進版控)，只保留說明用的 README
 nginx/certs/*
