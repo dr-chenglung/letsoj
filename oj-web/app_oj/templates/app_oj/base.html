@@ -59,6 +59,11 @@
                     <i class="fas fa-map" style="color: #fa709a;"></i> 程式學習地圖
                   </a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'materials_browse' %}">
+                    <i class="fas fa-book-open" style="color: #4facfe;"></i> 課堂教材
+                  </a>
+                </li>
                 {% if user.is_staff %}
                   <li class="nav-item">
                     <a class="nav-link" href="{% url 'home_management' %}" target='_blank'>

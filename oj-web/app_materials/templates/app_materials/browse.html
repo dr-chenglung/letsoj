@@ -38,13 +38,19 @@
       {% for f in files %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <a href="{% url 'materials_file' %}?path={{ f.path|urlencode }}"
-             {% if f.ext == '.pdf' %}target="_blank"{% endif %}>
+             {% if f.inline %}target="_blank"{% endif %}>
             {% if f.ext == '.pdf' %}
               <i class="fas fa-file-pdf" style="color:#e74c3c;"></i>
             {% elif f.ext == '.doc' or f.ext == '.docx' %}
               <i class="fas fa-file-word" style="color:#2b5797;"></i>
+            {% elif f.ext == '.ppt' or f.ext == '.pptx' or f.ext == '.odp' %}
+              <i class="fas fa-file-powerpoint" style="color:#d24726;"></i>
+            {% elif f.ext == '.xls' or f.ext == '.xlsx' or f.ext == '.csv' or f.ext == '.ods' %}
+              <i class="fas fa-file-excel" style="color:#1d6f42;"></i>
+            {% elif f.ext == '.png' or f.ext == '.jpg' or f.ext == '.jpeg' or f.ext == '.gif' or f.ext == '.webp' or f.ext == '.svg' or f.ext == '.bmp' %}
+              <i class="fas fa-file-image" style="color:#16a085;"></i>
             {% else %}
-              <i class="fas fa-file" style="color:#888;"></i>
+              <i class="fas fa-file-alt" style="color:#888;"></i>
             {% endif %}
             {{ f.name }}
           </a>

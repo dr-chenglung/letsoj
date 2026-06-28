@@ -47,18 +47,45 @@ class ServeFileTests(MaterialsTestBase):
         resp = self.client.get("/materials/file", {"path": "sub"})
         self.assertEqual(resp.status_code, 404)
 
+    def test_image_served_inline(self):
+        self.write("圖.png", b"fakepng")
+        resp = self.client.get("/materials/file", {"path": "圖.png"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp["Content-Disposition"].startswith("inline"))
+
+    def test_disallowed_extension_returns_404(self):
+        self.write("desktop.ini", b"junk")
+        resp = self.client.get("/materials/file", {"path": "desktop.ini"})
+        self.assertEqual(resp.status_code, 404)
+
 
 class BrowseTests(MaterialsTestBase):
     def test_root_lists_dirs_and_files_and_hides_dotfiles(self):
         self.write("a.pdf")
+        self.write("photo.png")
         (self.root / "演算法").mkdir()
         self.write(".secret")
         resp = self.client.get("/materials/")
         self.assertEqual(resp.status_code, 200)
         body = resp.content.decode()
         self.assertIn("a.pdf", body)
+        self.assertIn("photo.png", body)
         self.assertIn("演算法", body)
         self.assertNotIn(".secret", body)
+
+    def test_disallowed_extensions_are_filtered(self):
+        self.write("good.pdf")
+        self.write("desktop.ini")
+        self.write("note.txt")
+        self.write("script.exe")
+        resp = self.client.get("/materials/")
+        body = resp.content.decode()
+        self.assertIn("good.pdf", body)
+        self.assertIn("note.txt", body)
+        self.assertNotIn("desktop.ini", body)
+        self.assertNotIn("script.exe", body)
+        names = [f["name"] for f in resp.context["files"]]
+        self.assertEqual(names, ["good.pdf", "note.txt"])
 
     def test_subdir_listing_and_breadcrumb(self):
         self.write("演算法/第一章/講義.pdf")
