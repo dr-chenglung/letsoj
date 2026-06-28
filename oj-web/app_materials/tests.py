@@ -65,6 +65,20 @@ class ServeFileTests(MaterialsTestBase):
         resp = self.client.get(self.file_url("desktop.ini"))
         self.assertEqual(resp.status_code, 404)
 
+    def test_markdown_rendered_to_html(self):
+        self.write("readme.md", "# 標題\n\n內文段落".encode("utf-8"))
+        resp = self.client.get(self.file_url("readme.md"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "<h1>標題</h1>")
+        self.assertContains(resp, "內文段落")
+
+    def test_html_served_inline(self):
+        self.write("page.html", b"<html><body>hi</body></html>")
+        resp = self.client.get(self.file_url("page.html"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp["Content-Disposition"].startswith("inline"))
+        self.assertIn("text/html", resp["Content-Type"])
+
 
 class BrowseTests(MaterialsTestBase):
     def test_root_lists_dirs_and_files_and_hides_dotfiles(self):
@@ -79,6 +93,14 @@ class BrowseTests(MaterialsTestBase):
         self.assertIn("photo.png", body)
         self.assertIn("演算法", body)
         self.assertNotIn(".secret", body)
+
+    def test_markdown_and_html_listed(self):
+        self.write("note.md")
+        self.write("page.html")
+        resp = self.client.get("/materials/")
+        body = resp.content.decode()
+        self.assertIn("note.md", body)
+        self.assertIn("page.html", body)
 
     def test_disallowed_extensions_are_filtered(self):
         self.write("good.pdf")

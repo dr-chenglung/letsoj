@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
+import markdown as markdown_lib
 from django.conf import settings
 from django.http import FileResponse, Http404
 from django.shortcuts import render
@@ -21,6 +22,9 @@ def resolve_within_root(rel_path: str) -> Path:
     return target
 
 
+# 伺服器端轉成 HTML 再渲染的格式
+MARKDOWN_EXTS = {".md", ".markdown"}
+
 # 只顯示/送出這些教材相關格式（白名單），其餘（.ini、.exe、暫存檔等）一律過濾
 ALLOWED_DISPLAY_EXTS = {
     ".pdf",
@@ -29,13 +33,17 @@ ALLOWED_DISPLAY_EXTS = {
     ".xls", ".xlsx",
     ".txt", ".csv", ".rtf", ".odt", ".ods", ".odp",
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp",
+    ".html", ".htm",
+    *MARKDOWN_EXTS,
 }
 
-# 瀏覽器可直接內嵌檢視的格式（新分頁開啟）；其餘白名單格式則下載
+# 在瀏覽器內開啟（新分頁）的格式；其餘白名單格式則下載
 INLINE_EXTS = {
     ".pdf",
     ".txt", ".csv",
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp",
+    ".html", ".htm",
+    *MARKDOWN_EXTS,
 }
 
 
@@ -89,9 +97,23 @@ def serve_file(request, rel_path):
     target = resolve_within_root(rel_path)
     if not target.is_file():
         raise Http404("Not a file")
-    if target.suffix.lower() not in ALLOWED_DISPLAY_EXTS:
+    ext = target.suffix.lower()
+    if ext not in ALLOWED_DISPLAY_EXTS:
         raise Http404("File type not allowed")
-    disposition = "inline" if target.suffix.lower() in INLINE_EXTS else "attachment"
+
+    if ext in MARKDOWN_EXTS:
+        # 伺服器端把 Markdown 轉成 HTML 再套版型顯示
+        content_html = markdown_lib.markdown(
+            target.read_text(encoding="utf-8"),
+            extensions=["fenced_code", "tables"],
+        )
+        return render(request, "app_materials/markdown.html", {
+            "title": target.name,
+            "content_html": content_html,
+        })
+
+    # .html/.htm 由 FileResponse 依副檔名自帶 text/html，inline 時瀏覽器會渲染
+    disposition = "inline" if ext in INLINE_EXTS else "attachment"
     response = FileResponse(open(target, "rb"))
     response["Content-Disposition"] = (
         f"{disposition}; filename*=UTF-8''{quote(target.name)}"

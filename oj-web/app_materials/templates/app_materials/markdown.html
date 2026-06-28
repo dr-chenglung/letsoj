@@ -1,0 +1,13 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}{{ title }}{% endblock page_title %}
+
+{% block page_content %}
+<div class="row mt-2">
+  <div class="col-12">
+    <h4 class="mb-3"><i class="fas fa-file-lines" style="color:#555;"></i> {{ title }}</h4>
+    <div class="markdown-body">
+      {{ content_html|safe }}
+    </div>
+  </div>
+</div>
+{% endblock page_content %}

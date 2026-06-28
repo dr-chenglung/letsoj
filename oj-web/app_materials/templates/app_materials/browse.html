@@ -49,6 +49,10 @@
               <i class="fas fa-file-excel" style="color:#1d6f42;"></i>
             {% elif f.ext == '.png' or f.ext == '.jpg' or f.ext == '.jpeg' or f.ext == '.gif' or f.ext == '.webp' or f.ext == '.svg' or f.ext == '.bmp' %}
               <i class="fas fa-file-image" style="color:#16a085;"></i>
+            {% elif f.ext == '.html' or f.ext == '.htm' %}
+              <i class="fas fa-file-code" style="color:#e67e22;"></i>
+            {% elif f.ext == '.md' or f.ext == '.markdown' %}
+              <i class="fab fa-markdown" style="color:#555;"></i>
             {% else %}
               <i class="fas fa-file-alt" style="color:#888;"></i>
             {% endif %}
