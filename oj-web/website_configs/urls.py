@@ -9,6 +9,7 @@ urlpatterns = [
     path("accounts/logout/", include("app_account.urls")),  # 為了相容 {% url 'logout' %} 模板標籤
     # path('accounts/', include('django.contrib.auth.urls')), # 已改用自訂的 logout，避免路由衝突
     path("manage/", include("app_management.urls")),
+    path("materials/", include("app_materials.urls")),
     path("admin/", admin.site.urls),
 ]
 
