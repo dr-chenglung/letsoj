@@ -1,0 +1,59 @@
+{% extends "app_oj/base.html" %}
+{% block page_title %}課堂教材{% endblock page_title %}
+
+{% block page_content %}
+<div class="row mt-2">
+  <div class="col-12">
+    <h3 class="mb-3"><i class="fas fa-book-open" style="color:#4facfe;"></i> 課堂教材</h3>
+
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="{% url 'materials_browse' %}"><i class="fas fa-home"></i> 教材首頁</a>
+        </li>
+        {% for c in crumbs %}
+          {% if forloop.last %}
+            <li class="breadcrumb-item active" aria-current="page">{{ c.name }}</li>
+          {% else %}
+            <li class="breadcrumb-item">
+              <a href="{% url 'materials_browse' %}?path={{ c.path|urlencode }}">{{ c.name }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+
+    {% if not dirs and not files %}
+      <p class="text-muted">這個目錄目前沒有任何教材。</p>
+    {% endif %}
+
+    <ul class="list-group">
+      {% for d in dirs %}
+        <li class="list-group-item">
+          <a href="{% url 'materials_browse' %}?path={{ d.path|urlencode }}">
+            <i class="fas fa-folder" style="color:#f6c343;"></i> {{ d.name }}
+          </a>
+        </li>
+      {% endfor %}
+      {% for f in files %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{% url 'materials_file' %}?path={{ f.path|urlencode }}"
+             {% if f.ext == '.pdf' %}target="_blank"{% endif %}>
+            {% if f.ext == '.pdf' %}
+              <i class="fas fa-file-pdf" style="color:#e74c3c;"></i>
+            {% elif f.ext == '.doc' or f.ext == '.docx' %}
+              <i class="fas fa-file-word" style="color:#2b5797;"></i>
+            {% else %}
+              <i class="fas fa-file" style="color:#888;"></i>
+            {% endif %}
+            {{ f.name }}
+          </a>
+          <small class="text-muted">
+            {{ f.size|filesizeformat }} · {{ f.mtime|date:"Y-m-d H:i" }}
+          </small>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock page_content %}

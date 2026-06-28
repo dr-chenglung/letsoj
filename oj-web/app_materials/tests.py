@@ -46,3 +46,33 @@ class ServeFileTests(MaterialsTestBase):
         (self.root / "sub").mkdir()
         resp = self.client.get("/materials/file", {"path": "sub"})
         self.assertEqual(resp.status_code, 404)
+
+
+class BrowseTests(MaterialsTestBase):
+    def test_root_lists_dirs_and_files_and_hides_dotfiles(self):
+        self.write("a.pdf")
+        (self.root / "演算法").mkdir()
+        self.write(".secret")
+        resp = self.client.get("/materials/")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        self.assertIn("a.pdf", body)
+        self.assertIn("演算法", body)
+        self.assertNotIn(".secret", body)
+
+    def test_subdir_listing_and_breadcrumb(self):
+        self.write("演算法/第一章/講義.pdf")
+        resp = self.client.get("/materials/", {"path": "演算法/第一章"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["current"], "演算法/第一章")
+        crumb_names = [c["name"] for c in resp.context["crumbs"]]
+        self.assertEqual(crumb_names, ["演算法", "第一章"])
+        self.assertEqual([f["name"] for f in resp.context["files"]], ["講義.pdf"])
+
+    def test_browse_path_traversal_returns_404(self):
+        resp = self.client.get("/materials/", {"path": "../"})
+        self.assertEqual(resp.status_code, 404)
+
+    def test_browse_nonexistent_dir_returns_404(self):
+        resp = self.client.get("/materials/", {"path": "nope"})
+        self.assertEqual(resp.status_code, 404)

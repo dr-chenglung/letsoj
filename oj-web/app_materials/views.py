@@ -1,8 +1,10 @@
+import os
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
 from django.conf import settings
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import render
 
 
@@ -23,7 +25,45 @@ INLINE_EXTS = {".pdf"}
 
 
 def browse(request):
-    return HttpResponse("")  # 由 Task 3 以 TDD 取代
+    rel_path = request.GET.get("path", "")
+    target = resolve_within_root(rel_path)
+    if not target.is_dir():
+        raise Http404("Not a directory")
+
+    base = materials_root()
+    dirs, files = [], []
+    with os.scandir(target) as it:
+        for entry in it:
+            if entry.name.startswith("."):
+                continue
+            entry_rel = os.path.relpath(entry.path, base).replace(os.sep, "/")
+            if entry.is_dir():
+                dirs.append({"name": entry.name, "path": entry_rel})
+            elif entry.is_file():
+                st = entry.stat()
+                files.append({
+                    "name": entry.name,
+                    "path": entry_rel,
+                    "size": st.st_size,
+                    "mtime": datetime.fromtimestamp(st.st_mtime),
+                    "ext": os.path.splitext(entry.name)[1].lower(),
+                })
+    dirs.sort(key=lambda e: e["name"])
+    files.sort(key=lambda e: e["name"])
+
+    crumbs = []
+    if rel_path.strip("/"):
+        accum = ""
+        for part in rel_path.strip("/").split("/"):
+            accum = f"{accum}/{part}" if accum else part
+            crumbs.append({"name": part, "path": accum})
+
+    return render(request, "app_materials/browse.html", {
+        "dirs": dirs,
+        "files": files,
+        "crumbs": crumbs,
+        "current": rel_path.strip("/"),
+    })
 
 
 def serve_file(request):
