@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "app_oj.apps.AppOjConfig",
     "app_management.apps.AppManagementConfig",
     "app_account.apps.AppLoginConfig",
+    "app_materials.apps.AppMaterialsConfig",
 ]
 
 MIDDLEWARE = [
@@ -204,3 +205,6 @@ LOGGING = {
 # Default session settings
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
+
+# 課堂教材根目錄（老師手動放檔，不進版控）。詳見 app_materials。
+COURSE_MATERIALS_ROOT = BASE_DIR / "course_materials"

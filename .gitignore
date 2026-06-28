@@ -23,6 +23,10 @@ staticfiles/
 *.log
 media/
 
+# 課堂教材實體檔(老師手動放置，不進版控)；保留空目錄佔位
+oj-web/course_materials/*
+!oj-web/course_materials/.gitkeep
+
 # 編輯器 / 系統
 .vscode/
 .DS_Store
