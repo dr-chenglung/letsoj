@@ -19,9 +19,21 @@ def resolve_within_root(rel_path: str) -> Path:
     return target
 
 
+INLINE_EXTS = {".pdf"}
+
+
 def browse(request):
     return HttpResponse("")  # 由 Task 3 以 TDD 取代
 
 
 def serve_file(request):
-    return HttpResponse("")  # 由 Task 2 以 TDD 取代
+    rel_path = request.GET.get("path", "")
+    target = resolve_within_root(rel_path)
+    if not target.is_file():
+        raise Http404("Not a file")
+    disposition = "inline" if target.suffix.lower() in INLINE_EXTS else "attachment"
+    response = FileResponse(open(target, "rb"))
+    response["Content-Disposition"] = (
+        f"{disposition}; filename*=UTF-8''{quote(target.name)}"
+    )
+    return response
