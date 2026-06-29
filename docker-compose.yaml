@@ -161,7 +161,7 @@ services:
     ports:
       # 公開IP可以查訪
       - 80:80
-      #- 127.0.0.1:80:80 # 只能用localhost查訪(內部開發階段，暫時不公開)
+      - 443:443
     environment:
       # 時區設定
       <<: *default-timezone    # Keep timezone setting
