@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 import markdown as markdown_lib
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
 from django.shortcuts import render
 
@@ -47,6 +48,7 @@ INLINE_EXTS = {
 }
 
 
+@login_required(login_url="user_login")
 def browse(request):
     rel_path = request.GET.get("path", "")
     target = resolve_within_root(rel_path)
@@ -93,6 +95,7 @@ def browse(request):
     })
 
 
+@login_required(login_url="user_login")
 def serve_file(request, rel_path):
     target = resolve_within_root(rel_path)
     if not target.is_file():

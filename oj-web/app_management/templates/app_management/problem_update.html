@@ -138,6 +138,9 @@
   <script src="{% static 'vendor/codemirror/codemirror.min.js' %}"></script>
   <script src="{% static 'vendor/codemirror/mode/clike/clike.min.js' %}"></script>
 
+  {# 以 json_script 安全承載範例程式碼,避免 escapejs 放進 JS 反引號字串時 ${...} 被求值 (XSS) #}
+  {{ problem.sample_code|json_script:"sample-code-data" }}
+
   <script>
     var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
         lineNumbers: true,
@@ -150,7 +153,7 @@
 
     //var txtAra_user_sourceCode = document.querySelector('textarea[name="user_sourceCode"]');
     //editor.setValue(txtAra_user_sourceCode.value);
-    var user_submitted_code = `{{problem.sample_code|escapejs|safe}}`;
+    var user_submitted_code = JSON.parse(document.getElementById('sample-code-data').textContent) || '';
     editor.setValue(user_submitted_code);
 
     // Update hidden textarea on form submit
@@ -176,11 +179,9 @@
       //preview.innerHTML = result;
       //MathJax.typeset();
       setTimeout(function () {
-        //console.log(plainText);
         //preview.innerHTML = my_fun(plainText);
         //preview.innerHTML = preview.innerHTML;
         //preview.innerHTML = window.marked.parse(plainText);
-        //console.log(window.marked);
         preview.innerHTML = marked.parse(plainText);
         MathJax.typeset();
       }, 250);

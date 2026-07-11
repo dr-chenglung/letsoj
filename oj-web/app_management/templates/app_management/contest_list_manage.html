@@ -192,12 +192,9 @@
 
 
         $("input[name='start_time'").on("change.datetimepicker", function() {
-            //console.log(this.value);
 
             //$(this).attr("value")  $(this).val() gets the old value (before changed) in input tag
             //this.value can get the modified value
-            //console.log($(this).attr("value"));
-            //console.log($(this).attr("id"));
             let contest_id = $(this).attr("id");
             jQuery.ajax({
               type: "POST",
@@ -210,9 +207,7 @@
               }, //pass to server
               success: function (response) {
                 // "this" is undefined in here 
-                //console.log($(this).attr("id"));
                 //location.reload();
-                //console.log(response.contest_status);
 
                 let statusElement = $('#contest_status_'.concat(contest_id));
                 statusElement.empty();
@@ -269,7 +264,6 @@
             //$(this).attr("value", "True");
             //$(this).attr("checked", false);
             //$(this).prop('checked', false);
-            //console.log("true");
             is_public = "True";
             }
             
@@ -282,7 +276,6 @@
                 csrfmiddlewaretoken: "{{ csrf_token }}",
             }, //pass to server
             success: function (response) {
-                //console.log(response);
             }, //success function
             }); //ajax
             
@@ -292,7 +285,6 @@
             const selectElement = $(this);
             const policyValue = selectElement.val();
             const contestId = selectElement.data("contest-id");
-            //console.log(policyValue);
     
             $.ajax({
                 url: '/manage/update_solution_release_policy/',

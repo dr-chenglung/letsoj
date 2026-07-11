@@ -173,13 +173,10 @@
             //preview.innerHTML = result;
             //MathJax.typeset();
             setTimeout(function(){
-                //console.log(plainText);
                 //preview.innerHTML = my_fun(plainText);
                 //preview.innerHTML = preview.innerHTML;
                 //preview.innerHTML = window.marked.parse(plainText);
-                //console.log(window.marked);
                 preview.innerHTML = marked.parse(plainText);
-                //console.log(preview);
                 MathJax.typeset();
             }, 250);
             return "轉格式中...";

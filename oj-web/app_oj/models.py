@@ -48,6 +48,10 @@ class Submission(models.Model):
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
+    # judge0 回傳的 task token,提交時綁定本筆提交。取結果時憑此 token 反查提交,
+    # 不再信任前端傳入的 problem_id/contest_id(修補競賽刷分/結束後篡改漏洞)。
+    judge_token = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+
     class Meta:
         # 刻意設計：(submitted_by, contest, problem) 唯一，每位學生每題只保留「最後一次」提交。
         # 重複提交會覆蓋原本的 source_code 與判題狀態，不保留完整提交歷史。

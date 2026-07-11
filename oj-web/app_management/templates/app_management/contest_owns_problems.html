@@ -123,7 +123,6 @@
       //$(this).prop('checked', false);
       is_selected = "True";
       }
-      console.log(is_selected);
 
       jQuery.ajax({
       type: "POST",
@@ -138,9 +137,6 @@
           const problem_contests = response.problem_contests;
           //const problem_contests = JSON.stringify(response.problem_contests);
 
-          console.log(response.problem_contests);
-          console.log(problem_id);
-          console.log(problem_contests.length);
 
 
           $("#display_contest_titles_".concat(problem_id)).empty();

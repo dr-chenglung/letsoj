@@ -1,10 +1,8 @@
 import os
 
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.timezone import now
 from django.db.models import Q
@@ -17,11 +15,13 @@ from app_oj.models import Submission, ContestRank, JudgeStatus
 
 import math
 from django.utils import timezone
+from datetime import timedelta
 import markdown
 import requests
 import re
 import base64
 import json
+from collections import Counter
 
 import logging
 
@@ -356,7 +356,7 @@ def submit_to_judger(request):
 
     source_code = request.POST.get("source_code")
     logger.info("取得source_code.........")
-    logger.info(source_code)
+    # 不記錄學生原始碼到 log(避免敏感資料外洩與日誌膨脹)
 
 
     judge_response_info = {}
@@ -367,12 +367,13 @@ def submit_to_judger(request):
         judge_response_info["judge_status_description"] = "此題目不屬於該競賽！"
         return JsonResponse(judge_response_info)
 
+    # 檢查比賽是否結束，若結束則不再接受提交，除非是管理者
     if contest.status == ContestStatus.CONTEST_ENDED and not request.user.is_staff:
         judge_response_info["result_status"] = "Expired"
         judge_response_info["judge_status_description"] = "比賽已經結束!"
         # logger.info("比賽已經結束.........")
         return JsonResponse(judge_response_info)
-    # 讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
+    # 檢查比賽尚未開始。讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
     elif (
         contest.status == ContestStatus.CONTEST_NOT_START and not request.user.is_staff
     ):
@@ -383,25 +384,21 @@ def submit_to_judger(request):
     # logger.info("檢查是否有submit過.........")
     # 檢查是否有submit過，若有，則更新時間與程式碼，若沒有，則新增一筆submission記錄提交
     try:
-        # 看看有沒有提交過
+        # 看看有沒有提交過，若有提交會進行以下檢查與更新狀態，若沒有提交過，會進入之後的 except 新增一筆submission
         submission = Submission.objects.get(
             submitted_by=user, contest=contest, problem=problem
         )
         # logger.info("已經有submission過了")
 
-        # Plain Text (judge_id=43) 題型：只能提交一次，已交過就擋掉
-        # 管理者除外，方便測試
+        # Plain Text (judge_id=43) 題型：只能提交一次，已交過就擋掉 (管理者除外，方便測試)
         if getattr(problem.language, "judge_id", None) == 43 and not request.user.is_staff:
             judge_response_info["result_status"] = "AlreadySubmitted"
             judge_response_info["judge_status_description"] = "此題僅能提交一次，無法再次提交！"
             return JsonResponse(judge_response_info)
 
-        # 雖已經提交接受過了，仍讓使用者可以再次提交更完美的程式碼版本-->不再使用此功能了!
-        # 這裡的寫法是為了因應這種情況: Accepted之後，仍可以提交多次，但是只有最後一次的結果會被記錄，會影響排名
         # 前端已經有管制:<button type="button" id="submitMyCode" class="btn btn-primary" {% if contest.status == "ENDED" or submission.judge_status_description == "Accepted" %}disabled{% endif %}>提交程式碼...</button>
-        # 提交按鈕已經在前端有管制，若已經提交過，則按鈕disabled，此處不必再次檢查，因為一定是新的或是尚未Accepted的情況 ==>仍要檢查，因為前端可破解按鈕可用狀態
-
-        # 若前端按鈕遭惡意設定為可用，這裡檢查可以阻擋掉。另外，為了讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
+        # 提交按鈕已經在前端有管制，若已經提交過，則按鈕disabled，此處仍要檢查，因為前端可破解按鈕可用狀態
+        # 若前端按鈕遭惡意設定為可提交，這裡檢查可以阻擋掉。另外，為了讓管理者不受限制，可以提交做測試，加上以下條件: and not request.user.is_staff
         if submission.judge_status == JudgeStatus.ACCEPTED and not request.user.is_staff:
             judge_response_info["result_status"] = "Accepted"
             judge_response_info["judge_status_description"] = "已經Accepted，別再送了!"
@@ -413,7 +410,7 @@ def submit_to_judger(request):
         submission.source_code = source_code
         submission.save()
 
-    # 首次提交:新增一筆新的submission，填入程式碼，與自動記錄現在時間。有無通過的細節在後面取得結果的函數中處理
+    # 若沒有submission就是首次提交:新增一筆新的submission，填入程式碼，與自動記錄現在時間。有無通過的細節在後面取得結果的函數中處理
     except Submission.DoesNotExist:
         submission = Submission.objects.create(
             submitted_by=user,
@@ -424,10 +421,9 @@ def submit_to_judger(request):
 
 
     # 送給Judger執行: 不管是第一次提交還是再次提交(只有尚未Accepted情況，前面步驟已經排除Accepted情況)，都會送給Judger執行
-
     # Plain Text (judge_id=43) 選擇題：不套用程式樣板，並去除前後空白
     # 否則 template 的 prepend/append 會在答案前後插入換行，導致與 expected_output 比對失敗
-    # 可以自己寫比對程式碼，不必依賴 Judge0的比對。
+    # 此處也可以自己寫比對程式碼，不必依賴 Judge0的比對，回應速度應可快些。
     if getattr(problem.language, "judge_id", None) == 43:
         source_code = (source_code or "").strip() # 如果 source_code 是 None，則使用空字符串，並去除前後空白
     elif problem.template.strip():
@@ -456,7 +452,7 @@ def submit_to_judger(request):
                 encoded_additional_files = base64.b64encode(zip_file.read()).decode('utf-8')
         except Exception as e:
             logger.error(f"讀取資料庫題型 ZIP 附檔失敗: {e}")
-    # ==========================
+    # 資料庫題目結束==========================
 
 
     # v1.14版才會有多筆測試案例，查看版本https://github.com/judge0/judge0
@@ -478,9 +474,14 @@ def submit_to_judger(request):
             test_case["stdin"],
             test_case["expected_output"],
             problem.language.judge_id,
-            encoded_additional_files # <--- 動態帶入
+            encoded_additional_files # <--- 動態帶入附加檔案:資料庫驅動程式
         )
         judge_response_info["task_token"] = str(task_token)
+        # 綁定本次提交的 judge token,並把狀態重設為 IN_QUEUE(表示本次提交尚未取得最終結果)。
+        # 之後 get_submission_result 僅憑此 token 反查提交,不再信任前端傳入的 problem_id/contest_id。
+        submission.judge_token = str(task_token)
+        submission.judge_status = JudgeStatus.IN_QUEUE
+        submission.save(update_fields=["judge_token", "judge_status"])
     except Exception as error:
         judge_response_info["result_status"] = "SubmittingToJudgerError"
         logger.error("丟給Judger，發生例外了!")
@@ -499,9 +500,14 @@ def submit_to_judger(request):
 @login_required(login_url="user_login")
 def get_submission_result(request):
     logger.info("取得提交結果.........")
-    task_token = json.loads(request.POST.get("task_token"))
+    try:
+        task_token = json.loads(request.POST.get("task_token"))
+    except (TypeError, ValueError):
+        # task_token 缺失或非合法 JSON(例如前端送出 undefined),直接拒絕而非 500
+        return JsonResponse({"result_status": "InvalidToken"})
     logger.info(f"token: {task_token}")
 
+    # 取得 Judger 結果
     judge_response_info = {}
     try:
         judge_result = requests.get(
@@ -530,14 +536,15 @@ def get_submission_result(request):
         judge_response_info["result_status"] = "GetJudgerResultError"
         return JsonResponse(judge_response_info)
 
-    status = judge_result["status"]["id"]
+    # 判斷結果狀態
+    status = judge_result["status"]["id"] # 取得判題狀態編號
     judge_response_info["judge_status"] = status
 
-    # 判斷是否還在排隊或處理中或是已經完成
+    # 判斷是否還在排隊或處理中(返回繼續輪詢)  或是已經完成(回覆訊息的準備、更新資料庫、計算排名)
     if status == JudgeStatus.IN_QUEUE or status == JudgeStatus.PROCESSING:
         # 還沒有獲得執行結果，則返回"JudgerInQueueOrProcessing"
         judge_response_info["result_status"] = "JudgerInQueueOrProcessing"
-        return JsonResponse(judge_response_info)  # 直接回前端，持續呼叫取結果
+        return JsonResponse(judge_response_info)  # 判題仍在排隊中與處理中: 直接回前端，持續呼叫這個函數取得結果，直到有結果為止
     elif status == JudgeStatus.ACCEPTED:
         # 答案正確
         judge_response_info["judge_compile_output"] = "通過~~測資正確!"
@@ -574,33 +581,66 @@ def get_submission_result(request):
         "description"
     ]
 
-    # 有獲得執行結果(除了前述JudgerInQueueOrProcessing情況回去前端持續呼叫之外，其他的結果明確，進行以下處理)
-    problem_id = request.POST.get("problem_id")
-    contest_id = request.POST.get("contest_id")
-
+    # Judge結果執行結果確定了(除了前述JudgerInQueueOrProcessing情況回去前端持續呼叫之外，其他的結果明確)，繼續進行以下處理:
+    # 以 judge token 反查本次提交,並綁定當前使用者:不信任前端傳入的 problem_id/contest_id。
+    # 藉此阻擋「用某題的 token 搭配別題 problem_id 竄改成績」以及盜用他人 token。
+    # 檢查token是否與使用者綁定，避免token被盜用竄改成績: 用 某一題(例如:1441 會做的題目) 的 token () 換題刷 另外一題1442不會做的題目
     user = request.user
-    contest = Contest.objects.get(id=contest_id)
-    problem = Problem.objects.get(id=problem_id)
+    try:
+        submission = Submission.objects.select_related("contest", "problem").get(
+            judge_token=str(task_token), submitted_by=user
+        ) # N+1 query: select_related 會在一個查詢中抓取相關的外鍵資料，避免後續對 contest 和 problem 的額外查詢，減少資料庫查詢次數，提高效能。
+    except Submission.DoesNotExist:
+        return JsonResponse({"result_status": "InvalidToken"})
+
+    contest = submission.contest 
+    problem = submission.problem
+    problem_id = problem.id  # 後續排名邏輯沿用;現在來自伺服器端反查,非前端傳入
+
+    # 擋掉這種前端攻擊情況(重送幾乎沒好處): 拿舊 token 重複送出的，前面取得AC結果後，前端再送一次舊 token 來刷分，這裡會被擋掉。
+    # 只在本次提交尚未取得最終結果時才計分, 避免用舊 token 重複送、反覆刷分。
+    if submission.judge_status not in (JudgeStatus.IN_QUEUE, JudgeStatus.PROCESSING):
+        return JsonResponse(
+            {
+                "result_status": "AlreadyFinalized",
+                "judge_status": submission.judge_status,
+                "judge_status_description": submission.judge_status_description,
+                "judge_compile_output": submission.judge_compile_output,
+            }
+        )
+
+    # 重新檢查比賽狀態:提交須發生在比賽時間內,且取結果不得晚於結束太久(給判題延遲一點寬限)
+    # 以阻擋「結束前已有提交、結束後又送 token 回刷」竄改已結束競賽的成績
+    # 但壓線提交仍可正常計分。
+    GET_RESULT_GRACE_SECONDS = 20 # 允許在比賽結束後20秒內取得結果，避免網路延遲或判題延遲導致成績無法更新。
+    if not request.user.is_staff and contest.end_time:
+        if (
+            submission.submitted_at > contest.end_time
+            or timezone.now() > contest.end_time + timedelta(seconds=GET_RESULT_GRACE_SECONDS)
+        ):
+            judge_response_info["result_status"] = "Expired"
+            judge_response_info["judge_status_description"] = "比賽已結束,成績不再更新!"
+            return JsonResponse(judge_response_info)
+
+
+    # 更新資料庫中該 submission 的結果，並更新排名資訊
     contest_problem = ContestProblem.objects.get(contest=contest, problem=problem)
 
     # logger.info(f"Submission更新,judge_response_info:{judge_response_info}")
-    # 紀錄提交結果Submission
-    Submission.objects.filter(
-        submitted_by=user, contest=contest, problem=problem
-    ).update(
-        # **judge_response_info # 這樣會有問題，因為judge_response_info沒有某些key
-        judge_compile_output=judge_response_info["judge_compile_output"],
-        judge_status=judge_response_info["judge_status"],
-        judge_status_description=judge_response_info["judge_status_description"],
+    # 紀錄提交結果Submission(submission 已由 token 反查取得,直接更新該筆)。
+    # judge_status 被設為最終結果後,下次同 token 再送會被上面的「AlreadyFinalized」擋下,避免重複刷分。
+    submission.judge_compile_output = judge_response_info["judge_compile_output"]
+    submission.judge_status = judge_response_info["judge_status"]
+    submission.judge_status_description = judge_response_info["judge_status_description"]
+    submission.save(
+        update_fields=[
+            "judge_compile_output",
+            "judge_status",
+            "judge_status_description",
+        ]
     )
 
-    submission = Submission.objects.get(
-        submitted_by=user, contest=contest, problem=problem
-    )
-    # print(submission)
-
-    # 紀錄排行資訊
-    ### Update contest rank
+    # 紀錄排名資訊Update contest rank
     # 用 transaction.atomic + select_for_update 對 ContestRank 該列加鎖，
     # 避免同一使用者快速重複提交時，「讀取→修改→寫回」互相覆蓋導致計數錯亂(競態)
     with transaction.atomic():
@@ -670,9 +710,6 @@ def get_submission_result(request):
         contestRank.save()
 
     return JsonResponse(judge_response_info)
-
-
-from collections import Counter
 
 
 @login_required(login_url="user_login")

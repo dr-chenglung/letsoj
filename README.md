@@ -62,15 +62,44 @@ oj-postgres-db/postgres
 
 # 正式佈署
 
-可修改docker-compose.yaml
+正式環境部署前,請依序完成下列項目:
+
+## 1. 關閉開發伺服器,改用 gunicorn
+`docker-compose.yaml`:
 ```
-DEV_SERVER: false # 不會啟動python manage.py runserver
+DEV_SERVER: false   # 不啟動 python manage.py runserver,改用 gunicorn
 ```
-將oj-web 加上註解如下:
+
+## 2. 取消掛載本機原始碼
+`docker-compose.yaml` 的 oj-web 服務:
 ```
-volumes
-    # - ./oj-web:/app  # 將這行加上註解
+volumes:
+    # - ./oj-web:/app   # 正式環境請註解掉這行(避免本機程式碼覆蓋映像內容)
 ```
+
+## 3. 重新建置映像(讓 requirements.txt 的套件版本生效)
+升級套件(Django、requests 等)或改動需重裝依賴時,務必 rebuild:
+```
+docker compose build oj-web
+docker compose up -d oj-web
+```
+
+## 4. 設定 .env(參考 .env.example)
+- `DJANGO_SECRET_KEY`:一組夠長的隨機字串(切勿沿用範例值)
+- `DJANGO_ALLOWED_HOSTS`:你的網域/IP(逗號分隔),務必包含伺服器對外 IP
+- `DJANGO_DEBUG=false`:正式環境務必關閉
+
+## 5. 啟用 HTTPS(建議)
+若由本機 nginx 終結 TLS:
+- `.env` 設 `NGINX_CONF=nginx-ssl.conf` 與 `USE_HTTPS=true`
+- 憑證放到 `nginx/certs/`(`fullchain.pem`、`privkey.pem`,詳見 `nginx/certs/README.md`)
+
+若 HTTPS 由上游代理處理,只需設 `USE_HTTPS=true`(nginx 仍用預設 `nginx.conf`)。
+
+## 6. 更換 judge0 預設密碼與強化
+- `judge0-v1.13.1/judge0.conf`:更換 `POSTGRES_PASSWORD`、`REDIS_PASSWORD` 的預設值
+- 提交沙箱已預設 `ENABLE_NETWORK=false`(禁止提交程式對外連線)
+- 若 judge0 需對外開放,建議設定 `AUTHN_TOKEN` 為 API 加上驗證
 
 目前程式碼仍是雛型階段，功能未盡完善，或許存在潛在的Bugs。但已具備實用的OJ功能，尚能滿足基礎程式課程之繳交作業與考試的用途。可以依據個別需求加以修改或擴充。
 

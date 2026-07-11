@@ -187,7 +187,6 @@
         csrfmiddlewaretoken: "{{ csrf_token }}",
       }, //pass to server
       success: function (response) {
-        console.log(response);
 
         $("#switchLoginIP").attr(
           "checked",
@@ -253,7 +252,6 @@
         csrfmiddlewaretoken: "{{ csrf_token }}",
       }, //pass to server
       success: function (response) {
-        console.log(response);
         load_sys_options();
       }, //success function
     }); //ajax
@@ -367,7 +365,6 @@ $(".form-check-input").on("change", function () {
       csrfmiddlewaretoken: "{{ csrf_token }}",
     }, //pass to server
     success: function (response) {
-      console.log(response);
       load_sys_options();
     }, //success function
   }); //ajax
@@ -448,7 +445,6 @@ $(".form-check-input").on("change", function () {
         }
       },
       error: function (error) {
-        console.log("獲取登入登出紀錄失敗:", error);
       }
     });
   }
@@ -489,7 +485,6 @@ $(".form-check-input").on("change", function () {
         csrfmiddlewaretoken: "{{ csrf_token }}",
       }, //pass to server
       success: function (response) {
-        //console.log(response)
         showMessage("已將所有人踢出OJ系統！", "text-success");
       }, //success function
     }); //ajax
@@ -515,7 +510,6 @@ $(".form-check-input").on("change", function () {
         csrfmiddlewaretoken: "{{ csrf_token }}",
       },
       success: function (response) {
-        console.log(response);
         
         $("#display_no_login_users").empty();
         
@@ -557,7 +551,6 @@ $(".form-check-input").on("change", function () {
         displayLoginLogoutRecords();
       },
       error: function (error) {
-        console.log("查詢失敗:", error);
         showMessage("查詢失敗，請重試", "text-danger");
       }
     });

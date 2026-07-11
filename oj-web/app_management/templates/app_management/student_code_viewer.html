@@ -374,7 +374,6 @@
                     if (codeBlock) {
                         const langClass = codeBlock.className;
                         const dataLang = codeBlock.getAttribute('data-language');
-                        console.log('✓ 代碼塊語言:', langClass, '| 數據屬性:', dataLang);
                         
                         // 語言名稱映射
                         const langMap = {
@@ -397,7 +396,6 @@
                     }
                     
                     Prism.highlightAll();
-                    console.log('✓ Prism 語法高亮已執行');
                 } catch (e) {
                     console.error('Prism 高亮出錯:', e);
                 }
@@ -418,7 +416,6 @@
         if (typeof Prism !== 'undefined' && Prism.highlightAll) {
             setTimeout(function() {
                 Prism.highlightAll();
-                console.log('✓ 頁面加載完成，Prism 高亮已重新執行');
             }, 200);
         }
     });

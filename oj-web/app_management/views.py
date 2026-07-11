@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_POST
 
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.admin.views.decorators import staff_member_required
@@ -198,7 +199,7 @@ def problem_create(request):
         problem_json = {
             "title": request.POST.get("title"),
             "description": request.POST.get("description"),
-            "std_input": request.POST.get("std_input").strip(),
+            "std_input": (request.POST.get("std_input") or "").strip(),
             "std_output": request.POST.get(
                 "std_output"
             ),  # 不能strip()有些題目的答案需要前面有空白
@@ -295,9 +296,9 @@ def problem_update(request, pk):
         problem.title = request.POST.get("title")
         problem.description = request.POST.get("description")
         problem.std_input = request.POST.get("std_input", "").strip()
-        problem.std_output = request.POST.get(
+        problem.std_output = (request.POST.get(
             "std_output"
-        ).rstrip()  # 不能strip()因為有些題目的答案需要前面有空白
+        ) or "").rstrip()  # 不能strip()因為有些題目的答案需要前面有空白
         problem.template = request.POST.get("template")
         problem.sample_code = request.POST.get("sample_code")
 
@@ -331,12 +332,13 @@ def problem_update(request, pk):
 def problem_delete(request, pk):
 
     # GET 模式
-    problem = Problem.objects.get(id=pk)
+    problem = get_object_or_404(Problem, id=pk)
 
     try:
         problem.delete()
-    except:
-        messages.success(request, "刪除失敗!")
+    except Exception as e:
+        logger.error(f"刪除考題失敗 (pk={pk}): {e}")
+        messages.error(request, "刪除失敗!")
     else:
         messages.success(request, "刪除成功!")
 
@@ -757,7 +759,7 @@ def contest_create(request):
     else:
         contest_json = {}
 
-        current_time = datetime.now()
+        current_time = timezone.now()
         # formatted_time = current_time.strftime('%Y/%m/%d %H:%M:%S')
         # YYYY-MM-DD HH:MM 遇到空白被截斷??
         contest_json["start_time"] = current_time
@@ -901,36 +903,7 @@ def contest_owns_problems(request, contest_pk):
         }
         return render(request, "app_management/contest_owns_problems.html", context)
 
-    # 此部分使用者互動介面不好，被update_contest_owns_problems的ajax方式取代
-    elif request.method == "POST":
-        contest_owns = request.POST.getlist("contest_owns")
-        contest = Contest.objects.get(pk=contest_pk)
-        count = ContestProblem.objects.filter(contest=contest).count()
-        # print("筆數:",count)
-
-        for idx, problem_id in enumerate(contest_owns):
-            problem = Problem.objects.get(pk=problem_id)
-
-            try:
-                contest_problem = ContestProblem.objects.get(
-                    problem=problem, contest=contest
-                )
-                contest_problem.id_prblm_in_contest = "q"
-
-                contest_problem.save()
-            except ContestProblem.DoesNotExist:
-                contest_problem = ContestProblem.objects.create(
-                    problem=problem,
-                    contest=contest,
-                    id_prblm_in_contest="q" + str(count + idx + 1),
-                )
-                # print("新增:",contest_problem)
-
-        # contestProblem, sucess = ContestProblem.objects.update_or_create(problem=problem, contest=contest, id_prblm_in_contest="q")
-        return redirect("contest_problems_manage", contest_pk=contest.pk)
-
-
-# ajax方式選取考題
+# 替競賽新增考題: chekbox點選透過jajax方式選取考題
 @staff_member_required
 def update_contest_owns_problems(request):
     contest_id = request.POST.get("contest_id")
@@ -1028,6 +1001,7 @@ def get_abnormal_users(request):
 
 
 @staff_member_required
+@require_POST
 def delete_abnormal_users(request):
     IPRegectedUser.objects.all().delete()
     SessionWarningUser.objects.all().delete()
@@ -1069,6 +1043,7 @@ def get_login_logout_records(request):
 
 
 @staff_member_required
+@require_POST
 def delete_user_sessions(request):
     """
     刪除所有非管理員的 sessions 記錄
@@ -1473,9 +1448,9 @@ def update_solution_release_policy(request):
             contest.save()
             return JsonResponse({"success": True})
         except Contest.DoesNotExist:
-            return JsonResponse({"error": False, "error": "Contest not found"})
+            return JsonResponse({"success": False, "error": "Contest not found"})
         except Exception as e:
-            return JsonResponse({"error": False, "error": str(e)})
+            return JsonResponse({"success": False, "error": str(e)})
 
     return JsonResponse({"success": False, "error": "Invalid request method"})
 
@@ -2019,20 +1994,23 @@ def export_absent_students(request):
         
         range_description = "、".join(range_text)
         
+        from django.utils.html import format_html
         if absent_data:
             messages.success(
                 request,
-                mark_safe(f'✅ <strong>匯出預覽完成</strong><br>'
-                         f'📋 範圍：{range_description}<br>'
-                         f'👥 缺考者數量：{len(absent_data)} 人<br>'
-                         f'🏛️ 包含競賽數：{len(contests)} 場<br>'
-                         f'<br>請點擊下方「確認下載」按鈕來下載檔案')
+                format_html(
+                    '✅ <strong>匯出預覽完成</strong><br>'
+                    '📋 範圍：{}<br>'
+                    '👥 缺考者數量：{} 人<br>'
+                    '🏛️ 包含競賽數：{} 場<br>'
+                    '<br>請點擊下方「確認下載」按鈕來下載檔案',
+                    range_description, len(absent_data), len(contests),
+                )
             )
         else:
             messages.info(
                 request,
-                mark_safe(f'ℹ️ 未找到缺考者<br>'
-                         f'📋 範圍：{range_description}')
+                format_html('ℹ️ 未找到缺考者<br>📋 範圍：{}', range_description)
             )
     
     context = {'export_result': export_result}
@@ -2467,19 +2445,21 @@ def export_submissions(request):
             "ranks_count": len(ranks_data),
         }
 
-        from django.utils.safestring import mark_safe
+        from django.utils.html import format_html
 
         user_info = (
             f" (特定使用者: {usernames_input})" if usernames_input else " (全部使用者)"
         )
         messages.success(
             request,
-            mark_safe(
-                f"✅ <strong>匯出預覽完成</strong><br>"
-                f"📋 競賽：{contest.title} (ID: {contest_id}){user_info}<br>"
-                f"📝 提交記錄：{len(submissions_data)} 筆<br>"
-                f"🏆 排名資料：{len(ranks_data)} 筆<br>"
-                f"<br>請點擊下方「確認下載」按鈕來下載檔案"
+            format_html(
+                "✅ <strong>匯出預覽完成</strong><br>"
+                "📋 競賽：{} (ID: {}){}<br>"
+                "📝 提交記錄：{} 筆<br>"
+                "🏆 排名資料：{} 筆<br>"
+                "<br>請點擊下方「確認下載」按鈕來下載檔案",
+                contest.title, contest_id, user_info,
+                len(submissions_data), len(ranks_data),
             ),
         )
 
@@ -2650,7 +2630,8 @@ def import_submissions(request):
                     logger.error(f"Failed to import rank: {e}")
 
             # 顯示結果訊息
-            success_msg = f"匯入完成！競賽：{contest.title} (ID: {contest_id})<br>"
+            from django.utils.html import escape
+            success_msg = f"匯入完成！競賽：{escape(contest.title)} (ID: {escape(str(contest_id))})<br>"
             success_msg += f"提交記錄：成功 {imported_submissions} 筆"
             if updated_submissions > 0:
                 success_msg += f" (更新 {updated_submissions} 筆)"

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
   <head>
     <title>
       {% block page_title %}
@@ -130,6 +130,7 @@
                     <li>
                       <hr class="dropdown-divider">
                     </li>
+                    <li>
                       <a class="dropdown-item" href="{% url 'export_all_scores_to_excel' %}">
                         <i class="fas fa-file-download" style="color: #f093fb;"></i> 總成績表匯出
                       </a>
@@ -161,8 +162,8 @@
                 {% else %}
               <li class="nav-item">
                 <a class="btn btn-sm btn-outline-primary"
-                   href="accounts/login"
-                   role="button">Login</a>
+                   href="{% url 'user_login' %}"
+                   role="button">登入</a>
               </li>
             {% endif %}
           </ul>

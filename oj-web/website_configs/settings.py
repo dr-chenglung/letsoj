@@ -168,6 +168,9 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 
+# 開發(DEBUG=true)保留 DEBUG 詳盡日誌;正式環境用 INFO,避免冗長與敏感資料寫入。
+LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -176,30 +179,38 @@ LOGGING = {
     },
     "handlers": {
         "file": {
-            "level": "DEBUG",
-            "class": "logging.FileHandler",
+            "level": LOG_LEVEL,
+            # 檔案輪替:單檔上限 5MB,保留 2 個備份,避免日誌無限膨脹撐爆磁碟。
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": "./django-logfile.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 2,
             "formatter": "simple",
         },
         "console": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
     },
     "loggers": {
         "root": {  # means "root logger"
-            "handlers": ["file", "console"],  # use the above "console" handler
-            "level": "DEBUG",  # logging level
+            "handlers": ["file", "console"],
+            "level": LOG_LEVEL,
         },
         "logger": {
             "handlers": ["file", "console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
     },
 }
 
 # 'filename': './logsfiles/debug.log'
+
+# Email:本系統目前無「忘記密碼/寄信」功能(帳號由管理員建立、重設密碼),因此不需要 SMTP 設定。
+# 若日後要啟用密碼重設等寄信功能,再於此設定 EMAIL_BACKEND 與 SMTP 主機/帳密。
+# 開發階段若只想驗證寄信流程,可暫用 console backend(印到終端機,不真的寄出):
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # 瀏覽器cookie生存時間與瀏覽器關閉session不失效
 # Default session settings
