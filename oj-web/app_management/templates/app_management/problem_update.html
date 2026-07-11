@@ -73,8 +73,24 @@
             </select>
         </div>
         <div class="mb-3">
-            <label class="form-label">樣板Template: 提交的程式碼可只要輸入類別、方法，類似於LeetCode。PREPEND區塊會插入在提交程式碼的前面;APPEND區塊會插入在提交程式碼的後面;TEMPLATE區域目前沒有使用。</label>
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label mb-0 fw-bold" for="template">樣板Template</label>
+                <button type="button"
+                        id="template_skeleton_btn"
+                        class="btn btn-sm btn-outline-secondary">插入初始骨架</button>
+            </div>
+            <details class="mb-2 small text-muted">
+                <summary class="text-primary" style="cursor:pointer;">說明（點此展開）</summary>
+                <ul class="mt-2 mb-0">
+                    <li>可讓提交者只需輸入類別、方法，類似於 LeetCode。</li>
+                    <li><code>//PREPEND BEGIN … //PREPEND END</code>：內容會插入在提交程式碼的<strong>前面</strong>。</li>
+                    <li><code>//APPEND BEGIN … //APPEND END</code>：內容會插入在提交程式碼的<strong>後面</strong>。</li>
+                    <li><code>//TEMPLATE BEGIN … //TEMPLATE END</code>：目前<strong>尚未使用</strong>。</li>
+                    <li>標記需與上述格式完全一致，否則無法被正確解析；可按右上「插入初始骨架」自動帶入。</li>
+                </ul>
+            </details>
             <textarea class="form-control bg-light text-primary"
+                        id="template"
                         name="template"
                         rows="10">{{problem.template}}</textarea>
         </div>
@@ -159,6 +175,34 @@
     // Update hidden textarea on form submit
     document.querySelector('form').addEventListener('submit', function () {
       document.getElementById('sample_code').value = editor.getValue();
+    });
+  </script>
+  <!-- 樣板 Template 程式碼編輯區 (CodeMirror.fromTextArea 會在表單送出時自動寫回 textarea) -->
+  <script>
+    var templateEditor = CodeMirror.fromTextArea(document.getElementById('template'), {
+        lineNumbers: true,
+        mode: "text/x-java",
+        theme: "monokai",
+        autoRefresh: true,
+        viewportMargin: Infinity
+    });
+    templateEditor.setSize("100%", 300);
+
+    var TEMPLATE_SKELETON = [
+        "//PREPEND BEGIN",
+        "//PREPEND END",
+        "//TEMPLATE BEGIN",
+        "//TEMPLATE END",
+        "//APPEND BEGIN",
+        "//APPEND END"
+    ].join("\n");
+
+    document.getElementById('template_skeleton_btn').addEventListener('click', function () {
+        if (templateEditor.getValue().trim() === "" ||
+            confirm("目前樣板已有內容，確定要以初始骨架覆蓋嗎？")) {
+            templateEditor.setValue(TEMPLATE_SKELETON);
+            templateEditor.focus();
+        }
     });
   </script>
 <script>
