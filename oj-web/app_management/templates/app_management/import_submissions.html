@@ -62,8 +62,11 @@
               <div class="card-body">
                 <ul class="mb-0">
                   <li>JSON 檔案必須包含 <strong>contest_id</strong>，系統會自動讀取</li>
-                  <li>資料庫必須事先有建立好<strong>相同 ID</strong> 的競賽、題目和使用者，若沒有須事先匯入競賽、考題、使用者資料</li>
-                  <li>若提交記錄的 ID 已存在，則會<strong>直接覆蓋</strong>該筆資料</li>
+                  <li>資料庫必須事先有<strong>相同編號</strong>的競賽和題目，以及<strong>相同帳號</strong>的學生，若沒有須事先匯入競賽、考題、使用者資料</li>
+                  <li>提交記錄以<strong>「學生 + 競賽 + 題目」</strong>比對、排名以<strong>「學生 + 競賽」</strong>比對，<strong>不使用</strong>匯出檔裡的提交編號 (id)</li>
+                  <li>同一位學生在同一場競賽的同一題，若本站已有提交，會<strong>以匯入檔的內容為準覆蓋</strong>（例如考試站的紀錄蓋過本站的紀錄）；其他競賽、其他學生的提交<strong>不受影響</strong></li>
+                  <li>同一份檔案重複匯入不會產生重複資料，只會再更新一次</li>
+                  <li>提交時間會保留檔案中的原始時間，不會變成匯入的時間</li>
                   <li>匯入過程中若遇到錯誤（例如競賽、使用者或題目不存在），該筆資料會被跳過</li>
                 </ul>
               </div>
@@ -115,6 +118,9 @@
         </div>
         <div class="card-body small">
           <ul class="mb-0">
+            <li class="mb-2">
+              <i class="fas fa-exchange-alt me-1 text-primary"></i>考試站考完後，把該場考試的提交與排名匯回正式站（考試期間正式站有其他作業在提交也不會被覆蓋）
+            </li>
             <li class="mb-2">
               <i class="fas fa-copy me-1 text-primary"></i>複製競賽資料到另一系統
             </li>

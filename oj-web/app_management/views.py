@@ -2662,7 +2662,7 @@ def import_submissions(request):
 
         if not submissions_file or not ranks_file:
             messages.error(request, "請上傳提交記錄和排名資料檔案")
-            return render(request, "app_management/import_contest_and_problems.html")
+            return render(request, "app_management/import_submissions.html")
 
         try:
             # 讀取並解析 submissions JSON
@@ -2681,15 +2681,18 @@ def import_submissions(request):
                 messages.error(
                     request, "JSON 檔案中未包含 contest_id，請確認檔案格式正確"
                 )
-                return render(request, "app_management/import_contest_and_problems.html")
+                return render(request, "app_management/import_submissions.html")
 
             try:
                 contest = Contest.objects.get(id=contest_id)
             except Contest.DoesNotExist:
                 messages.error(request, f"競賽編號 {contest_id} 不存在，請先建立該競賽")
-                return render(request, "app_management/import_contest_and_problems.html")
+                return render(request, "app_management/import_submissions.html")
 
             # 匯入 Submission
+            # 一律以「學生+競賽+題目」比對 (資料庫唯一約束)，不沿用匯入檔的 id：
+            # 正式站整個複製到考試站之後，兩邊各自產生的新提交 id 會重疊，用 id 比對會蓋掉正式站其他作業的提交。
+            # 同一學生同一題兩邊都有時，以匯入的考試站資料為準。
             imported_submissions = 0
             failed_submissions = 0
             updated_submissions = 0
@@ -2698,57 +2701,19 @@ def import_submissions(request):
                     user = User.objects.get(username=s["submitted_by"])
                     problem = Problem.objects.get(id=s["problem_id"])
 
-                    # 如果有 ID，嘗試使用 ID 進行精確匹配
-                    submission_id = s.get("id")
-                    if submission_id:
-                        try:
-                            obj, created = Submission.objects.update_or_create(
-                                id=submission_id,
-                                defaults={
-                                    "submitted_by": user,
-                                    "contest": contest,
-                                    "problem": problem,
-                                    "source_code": s["source_code"],
-                                    "judge_compile_output": s["judge_compile_output"],
-                                    "judge_status_description": s[
-                                        "judge_status_description"
-                                    ],
-                                    "judge_status": s["judge_status"],
-                                    "submitted_at": s["submitted_at"],
-                                },
-                            )
-                        except Exception:
-                            # ID 衝突或其他問題，改用業務邏輯查找
-                            obj, created = Submission.objects.update_or_create(
-                                submitted_by=user,
-                                contest=contest,
-                                problem=problem,
-                                defaults={
-                                    "source_code": s["source_code"],
-                                    "judge_compile_output": s["judge_compile_output"],
-                                    "judge_status_description": s[
-                                        "judge_status_description"
-                                    ],
-                                    "judge_status": s["judge_status"],
-                                    "submitted_at": s["submitted_at"],
-                                },
-                            )
-                    else:
-                        # 沒有 ID，使用業務邏輯查找
-                        obj, created = Submission.objects.update_or_create(
-                            submitted_by=user,
-                            contest=contest,
-                            problem=problem,
-                            defaults={
-                                "source_code": s["source_code"],
-                                "judge_compile_output": s["judge_compile_output"],
-                                "judge_status_description": s[
-                                    "judge_status_description"
-                                ],
-                                "judge_status": s["judge_status"],
-                                "submitted_at": s["submitted_at"],
-                            },
-                        )
+                    obj, created = Submission.objects.update_or_create(
+                        submitted_by=user,
+                        contest=contest,
+                        problem=problem,
+                        defaults={
+                            "source_code": s["source_code"],
+                            "judge_compile_output": s["judge_compile_output"],
+                            "judge_status_description": s["judge_status_description"],
+                            "judge_status": s["judge_status"],
+                        },
+                    )
+                    # submitted_at 是 auto_now_add，新增時會被設成匯入當下，另外用 update 寫回考試當時的時間
+                    Submission.objects.filter(pk=obj.pk).update(submitted_at=s["submitted_at"])
 
                     imported_submissions += 1
                     if not created:
@@ -2757,7 +2722,7 @@ def import_submissions(request):
                     failed_submissions += 1
                     logger.error(f"Failed to import submission: {e}")
 
-            # 匯入 ContestRank
+            # 匯入 ContestRank: 同樣以「學生+競賽」比對，不沿用 id
             imported_ranks = 0
             failed_ranks = 0
             updated_ranks = 0
@@ -2765,50 +2730,21 @@ def import_submissions(request):
             for r in ranks_data:
                 try:
                     user = User.objects.get(username=r["submitted_by"])
-
-                    # 如果有 ID，嘗試使用 ID 進行精確匹配
-                    rank_id = r.get("id")
-                    if rank_id:
-                        try:
-                            obj, created = ContestRank.objects.update_or_create(
-                                id=rank_id,
-                                defaults={
-                                    "submitted_by": user,
-                                    "contest": contest,
-                                    "submission_count": r["submission_count"],
-                                    "accepted_count": r["accepted_count"],
-                                    "total_time": r["total_time"],
-                                    "submission_info": r["submission_info"],
-                                },
-                            )
-                        except Exception:
-                            # ID 衝突或其他問題，改用業務邏輯查找
-                            obj, created = ContestRank.objects.update_or_create(
-                                submitted_by=user,
-                                contest=contest,
-                                defaults={
-                                    "submission_count": r["submission_count"],
-                                    "accepted_count": r["accepted_count"],
-                                    "total_time": r["total_time"],
-                                    "submission_info": r["submission_info"],
-                                },
-                            )
+                    rank_fields = {
+                        "submission_count": r["submission_count"],
+                        "accepted_count": r["accepted_count"],
+                        "total_time": r["total_time"],
+                        "submission_info": r["submission_info"],
+                    }
+                    # ContestRank 沒有唯一約束，舊資料可能有重複的列，用 filter().first() 避免 MultipleObjectsReturned
+                    rank = ContestRank.objects.filter(submitted_by=user, contest=contest).order_by("id").first()
+                    if rank:
+                        ContestRank.objects.filter(pk=rank.pk).update(**rank_fields)
+                        updated_ranks += 1
                     else:
-                        # 沒有 ID，使用業務邏輯查找（避免重複創建）
-                        obj, created = ContestRank.objects.update_or_create(
-                            submitted_by=user,
-                            contest=contest,
-                            defaults={
-                                "submission_count": r["submission_count"],
-                                "accepted_count": r["accepted_count"],
-                                "total_time": r["total_time"],
-                                "submission_info": r["submission_info"],
-                            },
-                        )
+                        ContestRank.objects.create(submitted_by=user, contest=contest, **rank_fields)
 
                     imported_ranks += 1
-                    if not created:
-                        updated_ranks += 1
                 except Exception as e:
                     failed_ranks += 1
                     logger.error(f"Failed to import rank: {e}")

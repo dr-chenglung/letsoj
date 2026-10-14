@@ -206,3 +206,98 @@ class ImportResetsPkSequenceTests(TestCase):
         self.assertGreater(Problem.objects.create(title="新增題目").pk, new_problem_id)
         self.assertGreater(Contest.objects.create(title="新增競賽").pk, new_contest_id)
 
+
+class ImportSubmissionsTests(TestCase):
+    """
+    匯入提交紀錄與排名：一律用「學生+競賽+題目」(排名用「學生+競賽」)比對，不沿用來源的 id。
+    流程是正式站整個複製到考試站 → 考試 → 把考試站的提交匯回正式站，
+    兩台伺服器各自產生的新提交 id 會重疊，用 id 比對會把正式站其他作業的提交蓋掉。
+    同一學生同一題兩邊都有時，以匯入的考試站資料為準。
+    """
+
+    def setUp(self):
+        self.teacher = User.objects.create_user("teacher", password="pw", is_staff=True)
+        self.s1 = User.objects.create_user("s1", password="pw")
+        self.s2 = User.objects.create_user("s2", password="pw")
+        self.exam = Contest.objects.create(title="考試")
+        self.homework = Contest.objects.create(title="作業")
+        self.p1 = Problem.objects.create(title="p1")
+        self.p2 = Problem.objects.create(title="p2")
+        self.client = Client()
+        self.client.login(username="teacher", password="pw")
+
+    def _import(self, submissions, ranks):
+        files = {"submissions_file": submissions, "ranks_file": ranks}
+        upload = {k: SimpleUploadedFile(f"{k}.json", json.dumps(v).encode("utf-8")) for k, v in files.items()}
+        return self.client.post("/manage/import_submissions/", upload)
+
+    def _sub(self, sid, username, problem, code, status=3):
+        return {
+            "id": sid, "contest_id": self.exam.pk, "submitted_by": username, "problem_id": problem.pk,
+            "source_code": code, "judge_compile_output": "", "judge_status_description": "Accepted",
+            "judge_status": status, "submitted_at": "2026-10-14T08:00:00+00:00",
+        }
+
+    def _rank(self, rid, username, accepted):
+        return {"id": rid, "submitted_by": username, "submission_count": 1, "accepted_count": accepted,
+                "total_time": 0, "submission_info": {}}
+
+    def test_same_id_on_other_homework_is_not_overwritten(self):
+        # 正式站在考試期間有人交作業，id 和考試站的新提交重疊
+        homework_sub = Submission.objects.create(
+            submitted_by=self.s2, contest=self.homework, problem=self.p2,
+            source_code="作業程式碼", judge_status_description="Accepted", judge_status=3,
+        )
+        homework_rank = ContestRank.objects.create(submitted_by=self.s2, contest=self.homework, accepted_count=1)
+
+        self._import([self._sub(homework_sub.pk, "s1", self.p1, "考試程式碼")],
+                     [self._rank(homework_rank.pk, "s1", 1)])
+
+        homework_sub.refresh_from_db()
+        self.assertEqual((homework_sub.submitted_by, homework_sub.contest, homework_sub.source_code),
+                         (self.s2, self.homework, "作業程式碼"))
+        homework_rank.refresh_from_db()
+        self.assertEqual((homework_rank.submitted_by, homework_rank.contest), (self.s2, self.homework))
+
+        exam_sub = Submission.objects.get(submitted_by=self.s1, contest=self.exam, problem=self.p1)
+        self.assertEqual(exam_sub.source_code, "考試程式碼")
+        # 提交時間要保留考試當時的時間，不能變成匯入的時間
+        self.assertEqual(exam_sub.submitted_at.isoformat(), "2026-10-14T08:00:00+00:00")
+        self.assertNotEqual(exam_sub.pk, homework_sub.pk)
+        self.assertTrue(ContestRank.objects.filter(submitted_by=self.s1, contest=self.exam).exists())
+
+    def test_existing_exam_record_is_replaced_by_imported_one(self):
+        # 同一學生同一場同一題兩邊都有 → 以考試站(匯入檔)為準
+        Submission.objects.create(
+            submitted_by=self.s1, contest=self.exam, problem=self.p1,
+            source_code="正式站上的舊程式碼", judge_status_description="Wrong Answer", judge_status=4,
+        )
+        ContestRank.objects.create(submitted_by=self.s1, contest=self.exam, accepted_count=0)
+
+        self._import([self._sub(99999, "s1", self.p1, "考試站的程式碼")], [self._rank(99999, "s1", 1)])
+
+        subs = Submission.objects.filter(submitted_by=self.s1, contest=self.exam, problem=self.p1)
+        self.assertEqual(subs.count(), 1)
+        self.assertEqual((subs[0].source_code, subs[0].judge_status), ("考試站的程式碼", 3))
+        ranks = ContestRank.objects.filter(submitted_by=self.s1, contest=self.exam)
+        self.assertEqual([r.accepted_count for r in ranks], [1])
+
+    def test_reimport_same_file_does_not_duplicate(self):
+        subs = [self._sub(70001, "s1", self.p1, "a"), self._sub(70002, "s1", self.p2, "b")]
+        ranks = [self._rank(70001, "s1", 2)]
+        self._import(subs, ranks)
+        self._import(subs, ranks)
+        self.assertEqual(Submission.objects.filter(contest=self.exam).count(), 2)
+        self.assertEqual(ContestRank.objects.filter(contest=self.exam).count(), 1)
+
+    def test_imported_ids_are_not_used_so_later_submissions_still_work(self):
+        next_id = Submission.objects.create(
+            submitted_by=self.s2, contest=self.homework, problem=self.p1,
+            source_code="x", judge_status_description="In Queue",
+        ).pk + 1
+        self._import([self._sub(next_id, "s1", self.p1, "考試")], [self._rank(next_id, "s1", 1)])
+        later = Submission.objects.create(
+            submitted_by=self.s2, contest=self.homework, problem=self.p2,
+            source_code="y", judge_status_description="In Queue",
+        )
+        self.assertGreater(later.pk, next_id - 1)
