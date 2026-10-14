@@ -1144,6 +1144,32 @@ def delete_user_sessions(request):
     return JsonResponse({"message": "所有使用者的 sessions 已成功清除。"})
 
 
+def _parse_query_datetime(query_time):
+    """查詢時間點: 有填就用使用者給的 (YYYY-MM-DD HH:mm)，沒填默認為當下時間之前3個小時。格式錯誤丟 ValueError"""
+    if query_time:
+        return timezone.make_aware(datetime.strptime(query_time, "%Y-%m-%d %H:%M"))
+    return timezone.now() - timedelta(hours=3)
+
+
+def _students_of_class(query_class):
+    """所有非管理員的學生，有指定班級就只取該班級"""
+    students_query = User.objects.filter(is_staff=False)
+    if query_class:
+        students_query = students_query.filter(user_class=query_class)
+    return students_query
+
+
+def _logged_in_user_ids_since(query_datetime):
+    """在指定時間點之後有過登入記錄的使用者ID (當前登入的 LoggedInUser + 登入歷史 LoginHistory)"""
+    logged_in_user_ids = set(
+        LoggedInUser.objects.filter(created_at__gte=query_datetime).values_list("user_id", flat=True)
+    )
+    logged_in_user_ids.update(
+        LoginHistory.objects.filter(login_time__gte=query_datetime).values_list("user_id", flat=True)
+    )
+    return logged_in_user_ids
+
+
 @staff_member_required
 def get_no_login_users(request):
     """
@@ -1157,36 +1183,9 @@ def get_no_login_users(request):
     query_time = request.POST.get("query_time", "").strip()
     
     try:
-        # 計算查詢時間點
-        if query_time:
-            # 使用者提供的時間點
-            query_datetime = datetime.strptime(query_time, "%Y-%m-%d %H:%M")
-            query_datetime = timezone.make_aware(query_datetime)
-        else:
-            # 默認為當下時間之前3個小時
-            query_datetime = timezone.now() - timedelta(hours=3)
-        
-        # 查詢所有非管理員的學生
-        students_query = User.objects.filter(is_staff=False)
-        
-        # 如果指定了班級，就篩選該班級的學生
-        if query_class:
-            students_query = students_query.filter(user_class=query_class)
-        
-        # 查詢在指定時間點之後有過登入記錄的學生ID
-        logged_in_user_ids = set()
-        
-        # 方法1：從LoggedInUser表查詢（當前登入的使用者）
-        logged_in_users = LoggedInUser.objects.filter(
-            created_at__gte=query_datetime
-        ).values_list('user_id', flat=True)
-        logged_in_user_ids.update(logged_in_users)
-        
-        # 方法2：從LoginHistory表查詢（登入歷史）
-        login_histories = LoginHistory.objects.filter(
-            login_time__gte=query_datetime
-        ).values_list('user_id', flat=True)
-        logged_in_user_ids.update(login_histories)
+        query_datetime = _parse_query_datetime(query_time)
+        students_query = _students_of_class(query_class)
+        logged_in_user_ids = _logged_in_user_ids_since(query_datetime)
         
         # 找出沒有登入的學生
         no_login_users = students_query.exclude(id__in=logged_in_user_ids).order_by(
@@ -1232,6 +1231,69 @@ def get_no_login_users(request):
 
 
 @staff_member_required
+def get_no_submission_users(request):
+    """
+    查詢在指定時間點後已登入，但在指定考試中還沒有任何提交紀錄的學生
+    (提交不論評測結果，排隊中、編譯錯誤都算有交)
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    query_class = request.POST.get("query_class", "").strip()
+    query_time = request.POST.get("query_time", "").strip()
+
+    contest = Contest.objects.filter(pk=request.POST.get("contest_id") or None).first()
+    if contest is None:
+        return JsonResponse({"error": "請選擇考試"}, status=400)
+
+    try:
+        query_datetime = _parse_query_datetime(query_time)
+    except ValueError:
+        return JsonResponse({"error": "時間格式錯誤，請使用 YYYY-MM-DD HH:mm 格式"}, status=400)
+
+    submitted_user_ids = Submission.objects.filter(contest=contest).values_list("submitted_by_id", flat=True)
+    users = (
+        _students_of_class(query_class)
+        .filter(id__in=_logged_in_user_ids_since(query_datetime))
+        .exclude(id__in=submitted_user_ids)
+        .order_by("user_class", "username")
+    )
+
+    result = []
+    for user in users:
+        last_login = LoginHistory.objects.filter(user=user).order_by("-login_time").first()
+        result.append({
+            "username": user.username,
+            "full_name": user.full_name,
+            "user_class": user.user_class,
+            "last_login_time": timezone.localtime(last_login.login_time).strftime("%Y-%m-%d %H:%M:%S") if last_login else None,
+            "last_login_ip": last_login.ip if last_login else None,
+        })
+
+    return JsonResponse({
+        "no_submission_users": result,
+        "contest_title": contest.title,
+        "count": len(result),
+    })
+
+
+def _recent_public_contests(days=14):
+    """
+    「查詢已登入但未提交」的考試下拉選單: 前後 days 天內的公開考試
+    (尚未結束、或 days 天內結束，且 days 天內會開始)。進行中的排最前面，其餘依開始時間由新到舊
+    """
+    now = timezone.now()
+    contests = Contest.objects.filter(
+        is_public=True,
+        start_time__isnull=False,
+        end_time__isnull=False,
+        start_time__lte=now + timedelta(days=days),
+        end_time__gte=now - timedelta(days=days),
+    ).order_by("-start_time")
+    return sorted(contests, key=lambda c: not (c.start_time <= now <= c.end_time))
+
+
+@staff_member_required
 def manage_contest(request):
     # 「查詢未登入的學生」的班級下拉選單: 所有學生(非管理員)出現過的班級
     class_list = (
@@ -1245,7 +1307,7 @@ def manage_contest(request):
     return render(
         request,
         "app_management/manage_oj_settings.html",
-        {"class_list": class_list},
+        {"class_list": class_list, "contest_list": _recent_public_contests()},
     )
 
 

@@ -356,6 +356,24 @@
              id="queryTime" 
              placeholder="例如：2024-10-25 14:30" />
     </div>
+    <div class="col-md-5">
+      <label for="queryContest" class="form-label">考試(查詢已登入但未提交用，只列前後14天內的公開考試)</label>
+      <select class="form-select" id="queryContest">
+        {% for c in contest_list %}
+          <option value="{{ c.pk }}">{% if c.status == "UNDERWAY" %}【進行中】{% endif %}{{ c.title }}（{{ c.start_time|date:"Y-m-d H:i" }}）</option>
+        {% empty %}
+          <option value="">近期沒有公開的考試</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="row mb-3">
+    <div class="col-md-4">
+    <button type="button"
+        id="btn_query_no_submission_users"
+        class="btn btn-sm btn-warning w-100">查詢已登入但未提交的學生(再按一次刷新)</button>
+    </div>
+    <label class="form-label d-block">與上方共用班級與時間點：列出時間點後登入過、但在所選考試中一題都還沒交的學生(排隊中、編譯錯誤都算有交)。</label>
   </div>
   <!-- 顯示區塊-->
   <div class="col-lg-6 mb-2">
@@ -366,6 +384,21 @@
       <div class="card-body">
         <div class="row">
           <div id="display_no_login_users"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 區塊結束-->
+
+  <!-- 顯示區塊-->
+  <div class="col-lg-6 mb-2">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="h6 text-uppercase mb-0">已登入但未提交的考生</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div id="display_no_submission_users"></div>
         </div>
       </div>
     </div>
@@ -847,6 +880,70 @@ $(".form-check-input").on("change", function () {
       }, //success function
     }); //ajax
   }); // btn_delete_sessions
+
+  // 查詢已登入但在所選考試中尚未提交的學生
+  $("#btn_query_no_submission_users").on("click", function () {
+    let queryClass = $("#queryClass").val();
+    let queryTime = $("#queryTime").val().trim();
+    let contestId = $("#queryContest").val();
+
+    if (!contestId) {
+      showMessage("請先選擇考試", "text-danger");
+      return;
+    }
+    if (queryTime && !isValidDateTime(queryTime)) {
+      showMessage("時間格式錯誤，請使用 YYYY-MM-DD HH:mm 格式", "text-danger");
+      return;
+    }
+
+    jQuery.ajax({
+      type: "POST",
+      url: "/manage/get_no_submission_users/",
+      data: {
+        query_class: queryClass,
+        query_time: queryTime,
+        contest_id: contestId,
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function (response) {
+        // 資料一律用 .text() 塞入，避免姓名等欄位含 HTML 時造成 XSS
+        const $box = $("#display_no_submission_users").empty();
+        const users = response["no_submission_users"];
+
+        $box.append($("<strong>").text("查詢條件："), $("<br>"));
+        $box.append(document.createTextNode(
+          "考試: " + response["contest_title"] + " | 班級: " + (queryClass || "全部") +
+          " | 時間點: " + (queryTime || "未指定 (默認當下時間之前三個小時)")
+        ), $("<br>"));
+
+        if (users.length === 0) {
+          $box.append($("<span style='color: green;'>").text("🎉 已登入的學生都有提交！"));
+          return;
+        }
+        $box.append($("<strong>").text("已登入但未提交: " + users.length + " 人"), $("<br>"), $("<br>"));
+        const $tbody = $("<tbody>");
+        users.forEach(function (user) {
+          $tbody.append(
+            $("<tr>")
+              .append($("<td>").text(user["username"]))
+              .append($("<td>").text(user["full_name"] || ""))
+              .append($("<td>").text(user["user_class"] || ""))
+              .append($("<td>").text(user["last_login_time"] || ""))
+              .append($("<td>").text(user["last_login_ip"] || ""))
+          );
+        });
+        $box.append(
+          $("<table class='table table-sm table-striped'>")
+            .append("<thead><tr><th>學號</th><th>姓名</th><th>班級</th><th>最後登入時間</th><th>最後登入IP</th></tr></thead>")
+            .append($tbody)
+        );
+      },
+      error: function (xhr) {
+        const msg = (xhr.responseJSON && xhr.responseJSON.error) || "查詢失敗，請重試";
+        showMessage(msg, "text-danger");
+      }
+    });
+  });
 
   // 查詢未到學生（尚未登入的學生）
   $("#btn_query_no_login_users").on("click", function () {

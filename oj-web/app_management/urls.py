@@ -95,6 +95,9 @@ urlpatterns = [
     path(
         "get_no_login_users/", views.get_no_login_users, name="get_no_login_users"
     ),
+    path(
+        "get_no_submission_users/", views.get_no_submission_users, name="get_no_submission_users"
+    ),
     # 下載排名
     path(
         "ranking_download/<int:contest_pk>/",
