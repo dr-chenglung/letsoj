@@ -1,0 +1,27 @@
+# ====================================================================
+# 區域網路上機考試用的覆蓋檔 (只在考試環境使用)
+# --------------------------------------------------------------------
+# 用途: Windows 的 Docker Desktop 會把學生連線的來源 IP 改寫成閘道 IP，
+#       Django 因此看不到真實 IP。考試時改由「Windows 本機 nginx」當最外層入口，
+#       它看得到真實 IP，再轉給這裡的 oj-nginx 容器。
+#
+# 啟動方式 (疊加在原本的 docker-compose.yaml 之上，原檔不需修改):
+#   docker compose -f docker-compose.yaml -f docker-compose.exam.yaml up -d
+#
+# 回到一般模式:
+#   docker compose -f docker-compose.yaml up -d
+#
+# 詳細步驟見 exam-lan/README.md
+# 需要 Docker Compose v2.24.4 以上 (才支援 !override)
+# ====================================================================
+
+services:
+  oj-nginx:
+    # 取代(而非附加)原本的 80:80 / 443:443:
+    # 只綁在 127.0.0.1，學生電腦無法繞過 Windows 本機 nginx 直接連進來偽造 IP 標頭
+    ports: !override
+      - "127.0.0.1:8080:80"
+
+    volumes:
+      # 與原檔掛載到同一個容器路徑，Compose 會以此取代原本的 nginx 設定檔
+      - ./nginx/nginx-exam.conf:/etc/nginx/conf.d/default.conf:ro

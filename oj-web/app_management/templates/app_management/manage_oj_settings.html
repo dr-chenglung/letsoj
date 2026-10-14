@@ -1,11 +1,192 @@
 {% extends "app_management/base_management.html" %}
 {% block page_title %}
-  系統設定與考試管理
+  考試管理
 {% endblock page_title %}
 {% block page_content %}
   <div class="row mt-2 mb-5">
-    <h3>系統設定與上機考試管理(System Settings and Conntest Management)</h3>
+    <h3>上機考試管理(Exam Management)</h3>
     <label>實體上機考時，必須設定以下管制(建議可以全部開啟)。考試考完記得恢復原始設定。</label>
+  </div>
+  <!-- 操作結果訊息(showMessage 顯示在這裡) -->
+  <div id="page_message" class="fw-bold mb-3"></div>
+  <!-- 上機考試操作指南 -->
+  <div class="row mb-4">
+    <details class="border rounded p-3">
+      <summary class="fw-bold fs-5" style="cursor: pointer;">📋 區域網路上機考試操作指南(點開查看完整設定與步驟)</summary>
+
+      <h5 class="mt-3">一、各項管制的差別</h5>
+      <table class="table table-sm table-bordered">
+        <thead>
+          <tr><th>管制</th><th>擋什麼</th><th>衝突時誰勝出</th><th>何時檢查</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>只允許以下IP登入</td>
+            <td>教室外的電腦登入</td>
+            <td>—</td>
+            <td>登入時</td>
+          </tr>
+          <tr>
+            <td>只允許考生有一個登入(單一登入)</td>
+            <td>同一帳號同時在兩處使用</td>
+            <td>後登入者勝，先登入者被踢掉(作弊者進得去，只能事後從「多次登入」發現)</td>
+            <td>登入時</td>
+          </tr>
+          <tr>
+            <td><strong>考試模式：IP 綁定</strong></td>
+            <td>在別台電腦用別人的帳號；同一台電腦登入兩個帳號(換瀏覽器、無痕視窗)</td>
+            <td><strong>先綁定者勝</strong>，後來的直接被拒絕(作弊者進不去)</td>
+            <td>登入時</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>登入時的檢查順序：帳號密碼 → IP 白名單 → 考試 IP 綁定 → 登入 → 單一登入。管理者帳號不受這些管制。</p>
+
+      <h5 class="mt-3">二、第一次準備(只需做一次，詳見專案的 exam-lan/README.md)</h5>
+      <ol>
+        <li>在伺服器(Windows)安裝 nginx for Windows，並放入 <code>exam-lan/windows-nginx/conf/nginx.conf</code>。
+          原因：Windows 的 Docker Desktop 看不到學生電腦的真實IP，要靠 Windows 本機 nginx 轉交真實IP。</li>
+        <li>伺服器設定固定IP(例如 192.168.0.10)，並把這個IP<strong>追加</strong>到 <code>.env</code> 的 <code>DJANGO_ALLOWED_HOSTS</code>(原有項目不要刪)。</li>
+        <li>關閉教室 Router 的 Wi-Fi，避免學生手機連進考試網段。</li>
+      </ol>
+
+      <h5 class="mt-3">三、開考前步驟(每次考試)</h5>
+      <ol>
+        <li>以考試模式啟動：<code>docker compose -f docker-compose.yaml -f docker-compose.exam.yaml up -d</code>，再啟動 Windows 本機 nginx(<code>cd C:\nginx</code>、<code>start nginx</code>)。</li>
+        <li>用<strong>一台教室電腦</strong>登入管理者帳號、開啟本頁，確認下方「伺服器看到你目前的IP」顯示 <code>192.168.0.x</code>。
+          若出現紅字警告，代表網路設定沒做好，<strong>不可</strong>打開 IP 綁定(會擋住所有考生)。</li>
+        <li>按「清除所有綁定與被拒紀錄」，清掉上一次考試的資料(會同時登出所有考生)。</li>
+        <li>打開「考試模式：IP 綁定」開關。打開時會<strong>自動登出所有考生</strong>，考生要重新登入，重新登入的那台電腦就會被綁定。</li>
+        <li>(建議)打開「只允許以下IP登入」，填入 <code>192.168.0.0/24</code>，多一層保險。</li>
+        <li>(可選)「只允許考生有一個登入」可開可不開；IP 綁定已涵蓋它的防護，開著可多一份紀錄。</li>
+        <li>(建議)在頁面最下方「其他系統設定」打開「禁止使用者變更密碼」，並確認「禁止新使用者註冊」已開啟。</li>
+        <li>請學生在自己的座位電腦登入 OJ。</li>
+      </ol>
+
+      <h5 class="mt-3">四、考試中</h5>
+      <ul>
+        <li><strong>學生要換電腦</strong>(電腦故障、當機)：在「考試IP綁定名單」找到他按「解除」(會同時登出他)，再請他到新電腦登入。</li>
+        <li>學生反映「此帳號已綁定在另一台電腦」或「這台電腦已經登入過其他帳號」：查看「被拒紀錄」，確認是換電腦還是代考。</li>
+        <li><strong>考試中請勿切換 IP 綁定開關</strong>：關閉期間任何人都能在任何電腦登入任何帳號；再打開時會登出全班。</li>
+        <li>瀏覽器當掉重開：學生在<strong>同一台電腦</strong>重新登入即可，不需要老師處理。</li>
+      </ul>
+
+      <h5 class="mt-3">五、考試結束</h5>
+      <ol>
+        <li>關閉「考試模式：IP 綁定」開關，並視需要關閉「只允許以下IP登入」。綁定資料留著無妨，下次開考前再清除。</li>
+        <li>關閉 Windows 本機 nginx：<code>cd C:\nginx</code>、<code>.\nginx.exe -s quit</code>。</li>
+        <li>以一般模式重啟容器：<code>docker compose -f docker-compose.yaml up -d</code>(必須先關 Windows nginx，容器才拿得回 80 port)。</li>
+      </ol>
+
+      <h5 class="mt-3">六、常見情境(開啟 IP 綁定時)</h5>
+      <table class="table table-sm table-bordered">
+        <thead>
+          <tr><th>情境</th><th>結果</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>學生 A 在自己的電腦考完、登出後，想在同一台電腦登入<strong>缺考同學</strong>的帳號替他作答</td>
+            <td><strong>被拒絕</strong>。這台電腦的IP已綁定 A，不能再綁定其他帳號。</td>
+          </tr>
+          <tr>
+            <td>學生 A 想在自己的電腦登入<strong>已經在別台電腦考試的同學</strong>的帳號</td>
+            <td><strong>被拒絕</strong>。該同學的帳號已綁定在他自己的電腦，而且 A 的電腦也已綁定 A。</td>
+          </tr>
+          <tr>
+            <td>學生 A 在自己的電腦換瀏覽器或開無痕視窗，登入別人的帳號</td>
+            <td><strong>被拒絕</strong>。同一台電腦不論用哪個瀏覽器，IP 都相同。</td>
+          </tr>
+          <tr>
+            <td>校外或教室外的人拿到 A 的密碼想登入</td>
+            <td><strong>連不到伺服器</strong>(教室網路已斷外網)；就算在教室內別台電腦登入也會被拒絕。</td>
+          </tr>
+          <tr>
+            <td>瀏覽器當掉，學生在同一台電腦重新登入</td>
+            <td><strong>允許</strong>，不需要老師處理。</td>
+          </tr>
+          <tr>
+            <td>學生的電腦故障，要換到另一台電腦</td>
+            <td>被拒絕，須由老師在「考試IP綁定名單」按「解除」後，學生才能在新電腦登入。</td>
+          </tr>
+          <tr class="table-warning">
+            <td>⚠ 學生 A 走到<strong>沒有人使用的空位電腦</strong>，登入缺考同學的帳號</td>
+            <td><strong>擋不住</strong>：空位電腦與缺考同學的帳號都還沒綁定。須靠監考與事後比對：
+              (1) 監考時注意學生離開座位使用其他電腦；
+              (2) 用「查詢未登入的學生」掌握缺考名單；
+              (3) 在「考試IP綁定名單」檢查缺考名單中的帳號是否後來出現、綁定時間是否明顯晚於開考。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h5 class="mt-3">七、本頁其他按鈕與開關說明</h5>
+      <table class="table table-sm table-bordered">
+        <thead>
+          <tr><th>按鈕／開關</th><th>作用</th><th>何時使用</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>清理Session紀錄</td>
+            <td>讓所有考生(管理者除外)目前的登入全部失效，必須重新登入。</td>
+            <td>開考前。若有開 IP 綁定，打開開關時已會自動登出考生，可不必另外按。</td>
+          </tr>
+          <tr>
+            <td>停止任何人登入，或只允許以下IP登入</td>
+            <td>IP 白名單：只有填入網段內的電腦能登入(用逗號分隔，例如 <code>192.168.0.0/24</code>)；不填任何IP則除管理者外無人能登入。</td>
+            <td>考試時建議開啟。修改IP後要把開關關掉再打開才會生效。需架好 Windows 本機 nginx 才有效。</td>
+          </tr>
+          <tr>
+            <td>只允許考生有一個登入</td>
+            <td>同一帳號再次登入時，前一個登入會被踢掉，並記入「有多次登入的考生」。作弊者仍進得去，只能事後發現。</td>
+            <td>可開可不開。開啟 IP 綁定後，別台電腦的登入會先被綁定擋下，不會踢掉本人。</td>
+          </tr>
+          <tr>
+            <td>競賽尚未結束，不顯示已經提交成功的程式碼</td>
+            <td>競賽進行中隱藏「已通過」的程式碼，帳號外流時他人也看不到已通過的答案。</td>
+            <td>考試時建議開啟。</td>
+          </tr>
+          <tr>
+            <td>禁止新使用者註冊</td>
+            <td>關閉註冊頁面，避免考試中有人註冊新帳號。</td>
+            <td>平常與考試時都建議開啟。</td>
+          </tr>
+          <tr>
+            <td>禁止使用者變更密碼</td>
+            <td>考生不能修改密碼。</td>
+            <td>考試時建議開啟，避免考生在考場改密碼後忘記。</td>
+          </tr>
+          <tr>
+            <td>顯示考生多次登入與被拒絕IP情況</td>
+            <td>列出「被 IP 白名單拒絕」與「單一登入被踢掉」的紀錄。</td>
+            <td>考試中或考後查看，追查可疑的登入。</td>
+          </tr>
+          <tr>
+            <td>清除前一次的考生被拒絕IP、多次登入、登入登出紀錄</td>
+            <td>刪除被拒絕IP、多次登入、<strong>登入登出紀錄</strong>這幾份舊紀錄。<strong>不會</strong>刪除考試IP綁定名單。</td>
+            <td>新考試開始前做一次。注意：「查詢未登入的學生」是依登入紀錄判斷，清除後要等學生重新登入才查得到。</td>
+          </tr>
+          <tr>
+            <td>考試模式：IP 綁定</td>
+            <td>一個帳號只能在一台電腦使用，一台電腦只能使用一個帳號。打開時會登出所有考生。</td>
+            <td>考試時開啟；考試中請勿切換。</td>
+          </tr>
+          <tr>
+            <td>顯示綁定名單與被拒紀錄</td>
+            <td>列出每個帳號綁定的IP與時間，以及被綁定擋下的紀錄(原因、IP、時間)。</td>
+            <td>考試中隨時查看；學生換電腦時在名單按「解除」。</td>
+          </tr>
+          <tr>
+            <td>清除所有綁定與被拒紀錄</td>
+            <td>刪除所有考試IP綁定與被拒紀錄，並登出所有考生。</td>
+            <td>新考試開始前做一次；考試中請勿按。</td>
+          </tr>
+          <tr>
+            <td>查詢未登入的學生</td>
+            <td>從下拉選單選擇班級，列出該時間點後沒有登入紀錄的學生(未填時間則為三小時內)，可當作缺考名單，同時顯示登入登出紀錄。</td>
+            <td>考試開始約半小時後，選擇當天應考的班級查詢，時間點不填即可。</td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
   </div>
   <div class="row mb-2">
     <label class="form-label d-block">*上機考開始前務必要做一次清掃！讓考生在他處已經有的登入失效。若使用者密碼事先有被修改,那麼他之前的登入也會自動失效。</label>
@@ -64,21 +245,50 @@
              value="true" />
       <label class="form-check-label">競賽尚未結束，不顯示已經提交成功的程式碼，提交不成功的程式碼仍會顯示。(帳號洩漏給他人，也看不到提交的已接受答案)</label>
     </div>
+  </div>
+  <!-- 上機考試 IP 綁定 -->
+  <div class="row mt-3 mb-5">
     <div class="form-check form-switch">
       <input class="form-check-input"
              type="checkbox"
-             id="switchAllowUserRegister"
-             name="darkmode"
+             id="switchExamIPBinding"
              value="true" />
-      <label class="form-check-label">禁止新使用者註冊</label>
+      <label class="form-check-label fw-bold">考試模式：IP 綁定(一個帳號只能在一台電腦使用，一台電腦只能使用一個帳號)</label>
+      <label class="form-check-label d-block">考生打開開關後第一次登入時，帳號會綁定在那台電腦的IP。之後換電腦、或同一台電腦換瀏覽器/無痕視窗登入別的帳號，都會被拒絕。</label>
+      <label class="form-check-label d-block">*打開開關、按「清除所有綁定」、按「解除」時，都會登出相關考生，讓他們重新登入時才綁定。</label>
+      <label class="form-check-label d-block">*前提：伺服器必須看得到學生電腦的真實IP(見頁面上方的操作指南)。考試中請勿切換此開關。</label>
     </div>
-    <div class="form-check form-switch">
-      <input class="form-check-input"
-             type="checkbox"
-             id="switchDisablePasswordChange"
-             name="darkmode"
-             value="true" />
-      <label class="form-check-label">禁止使用者變更密碼</label>
+    <div class="mt-2">
+      <span>伺服器看到你目前的IP：</span><strong id="exam_your_ip">-</strong>
+      <span id="exam_ip_warning" class="text-danger ms-2"></span>
+    </div>
+    <div class="d-flex mt-2">
+      <button type="button"
+              id="btn_display_exam_bindings"
+              class="btn btn-sm btn-primary me-2">顯示綁定名單與被拒紀錄(再按一次刷新)</button>
+      <button type="button"
+              id="btn_clear_exam_bindings"
+              class="btn btn-sm btn-danger me-2">-->清除所有綁定與被拒紀錄，並登出所有考生(新考試開始前做一次)</button>
+    </div>
+    <div class="col-lg-6 mt-2 mb-2">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="h6 text-uppercase mb-0">考試IP綁定名單 (<span id="exam_binding_count">0</span> 人)</h3>
+        </div>
+        <div class="card-body">
+          <div id="display_exam_bindings"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6 mt-2 mb-2">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="h6 text-uppercase mb-0">考試IP綁定被拒紀錄(可能是換電腦或代考，須查問)</h3>
+        </div>
+        <div class="card-body">
+          <div id="display_exam_rejections"></div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="row mb-2">
@@ -126,15 +336,18 @@
         id="btn_query_no_login_users"
         class="btn btn-sm btn-success w-100">查詢未登入的學生(再按一次刷新)</button>
     </div>
-    <label class="form-label d-block">可以選填班級和時間點，查詢該時間點後尚未登入的學生。若未填寫時間點則默認為當下時間之前3個小時。</label>
+    <label class="form-label d-block">可以選擇班級和填寫時間點，查詢該時間點後尚未登入的學生(可當作缺考名單)。若未填寫時間點則默認為當下時間之前3個小時。</label>
+    <label class="form-label d-block">*查缺考時請選擇當天應考的班級。時間點不填即可(考試開始約半小時後查詢，三小時內的登入都會算到)。</label>
   </div>
   <div class="row mb-3">
     <div class="col-md-3">
-      <label for="queryClass" class="form-label">班級(選填)</label>
-      <input type="text" 
-             class="form-control m-input" 
-             id="queryClass" 
-             placeholder="例如：1A, 2B" />
+      <label for="queryClass" class="form-label">班級</label>
+      <select class="form-select" id="queryClass">
+        <option value="">全部班級</option>
+        {% for c in class_list %}
+          <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="col-md-4">
       <label for="queryTime" class="form-label">查詢時間點(選填，格式：YYYY-MM-DD HH:mm)</label>
@@ -173,6 +386,27 @@
     </div>
   </div>
   <!-- 區塊結束-->
+
+  <!-- 其他系統設定(非考試專用) -->
+  <div class="row mt-5 mb-5">
+    <h5>其他系統設定</h5>
+    <div class="form-check form-switch">
+      <input class="form-check-input"
+             type="checkbox"
+             id="switchAllowUserRegister"
+             name="darkmode"
+             value="true" />
+      <label class="form-check-label">禁止新使用者註冊</label>
+    </div>
+    <div class="form-check form-switch">
+      <input class="form-check-input"
+             type="checkbox"
+             id="switchDisablePasswordChange"
+             name="darkmode"
+             value="true" />
+      <label class="form-check-label">禁止使用者變更密碼(考試時建議開啟)</label>
+    </div>
+  </div>
 
 {% endblock page_content %}
 {% block script_block %}
@@ -215,6 +449,11 @@
           response["hide_submitted_code"] == "True"
         );
 
+        $("#switchExamIPBinding").prop(
+          "checked",
+          response["exam_ip_binding"] == "True"
+        );
+
         //注意:回傳的bool是字串，不是js bool
       }, //success function
     }); //ajax
@@ -249,6 +488,7 @@
         forbid_password_change: $("#switchDisablePasswordChange").val(),
         allow_user_register: $("#switchAllowUserRegister").val(),
         hide_submitted_code: $("#switchHideSubmittedCode").val(),
+        exam_ip_binding: $("#switchExamIPBinding").prop("checked") ? "True" : "False",
         csrfmiddlewaretoken: "{{ csrf_token }}",
       }, //pass to server
       success: function (response) {
@@ -256,6 +496,121 @@
       }, //success function
     }); //ajax
   }
+
+  // Event listener for #switchExamIPBinding
+  // 按「取消」時把開關恢復原狀，不送出設定
+  $("#switchExamIPBinding").on("change", function () {
+    const turningOn = $(this).is(":checked");
+    const msg = turningOn
+      ? "打開考試模式IP綁定？\n\n打開後所有考生都會被登出，必須重新登入；重新登入的那台電腦就會被綁定。\n考試進行中請勿切換此開關。"
+      : "關閉考試模式IP綁定？\n\n關閉後任何人都能在任何電腦登入任何帳號。\n若只是要讓某位學生換電腦，請改用綁定名單中的「解除」。";
+    if (!window.confirm(msg)) {
+      $(this).prop("checked", !turningOn);
+      return;
+    }
+    sendAjaxRequest();
+  });
+
+  // 在頁面上方顯示操作結果訊息(本頁多處呼叫，原本沒有定義)
+  function showMessage(message, cssClass) {
+    $("#page_message")
+      .removeClass("text-success text-danger")
+      .addClass(cssClass)
+      .text(message);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // 顯示考試 IP 綁定名單與被拒紀錄(用 .text() 塞入資料，避免 XSS)
+  function loadExamBindings() {
+    jQuery.ajax({
+      type: "GET",
+      url: "/manage/get_exam_ip_bindings/",
+      success: function (response) {
+        $("#exam_your_ip").text(response["your_ip"]);
+        $("#exam_ip_warning").text(
+          response["your_ip_is_internal"]
+            ? "這是 Docker/本機內部位址，伺服器看不到真實IP，考試模式IP綁定會擋住所有考生！請改用教室電腦開此頁確認。"
+            : ""
+        );
+
+        const bindings = response["bindings"];
+        $("#exam_binding_count").text(bindings.length);
+        const $b = $("#display_exam_bindings").empty();
+        if (bindings.length === 0) {
+          $b.append($("<span>").text("無紀錄"));
+        } else {
+          const $tbody = $("<tbody>");
+          bindings.forEach(function (row) {
+            const $btn = $("<button type='button' class='btn btn-sm btn-outline-danger py-0'>")
+              .text("解除")
+              .on("click", function () { resetExamBinding(row["username"]); });
+            $tbody.append(
+              $("<tr>")
+                .append($("<td>").text(row["ip"]))
+                .append($("<td>").text(row["username"]))
+                .append($("<td>").text(row["full_name"] || ""))
+                .append($("<td>").text(row["bound_at"]))
+                .append($("<td>").append($btn))
+            );
+          });
+          $b.append(
+            $("<table class='table table-sm table-striped'>")
+              .append("<thead><tr><th>IP</th><th>帳號</th><th>姓名</th><th>綁定時間</th><th></th></tr></thead>")
+              .append($tbody)
+          );
+        }
+
+        const rejections = response["rejections"];
+        const $r = $("#display_exam_rejections").empty();
+        if (rejections.length === 0) {
+          $r.append($("<span>").text("無紀錄"));
+        } else {
+          rejections.forEach(function (row) {
+            $r.append(
+              $("<div>").text(
+                row["created_at"] + "，" + row["username"] + "，" + (row["full_name"] || "") +
+                "，" + row["ip"] + "：" + row["reason"]
+              )
+            );
+          });
+        }
+      },
+    });
+  }
+
+  function resetExamBinding(username) {
+    if (!window.confirm("解除 " + username + " 的電腦綁定？\n\n他會被登出，到新電腦重新登入時就會綁定新的電腦。")) {
+      return;
+    }
+    jQuery.ajax({
+      type: "POST",
+      url: "/manage/reset_exam_ip_binding/",
+      data: { username: username, csrfmiddlewaretoken: "{{ csrf_token }}" },
+      success: function (response) {
+        showMessage(response["message"], response["success"] ? "text-success" : "text-danger");
+        loadExamBindings();
+      },
+    });
+  }
+
+  $("#btn_display_exam_bindings").on("click", loadExamBindings);
+
+  $("#btn_clear_exam_bindings").on("click", function () {
+    if (!window.confirm("清除所有考試IP綁定與被拒紀錄？\n\n所有考生都會被登出，必須重新登入。請在開考前使用，考試進行中請勿按。")) {
+      return;
+    }
+    jQuery.ajax({
+      type: "POST",
+      url: "/manage/clear_exam_ip_bindings/",
+      data: { csrfmiddlewaretoken: "{{ csrf_token }}" },
+      success: function (response) {
+        showMessage(response["message"], "text-success");
+        loadExamBindings();
+      },
+    });
+  });
+
+  loadExamBindings();
 
   // Event listener for #switchLoginIP
   $("#switchLoginIP").on("change", function () {
@@ -422,26 +777,29 @@ $(".form-check-input").on("change", function () {
         csrfmiddlewaretoken: "{{ csrf_token }}",
       },
       success: function (response) {
-        $("#display_login_logout_records").empty();
-        
-        if (!response["login_records"] || response["login_records"].length === 0) {
-          $("#display_login_logout_records").append("<span>無登入紀錄</span>");
+        // 資料一律用 .text() 塞入，避免 XSS
+        const $box = $("#display_login_logout_records").empty();
+        const loginRecords = response["login_records"] || [];
+        const logoutRecords = response["logout_records"] || [];
+
+        if (loginRecords.length === 0) {
+          $box.append($("<span>").text("無登入紀錄"));
         } else {
-          let text = "<strong>登入紀錄：</strong><br>";
-          for (let i = 0; i < response["login_records"].length; i++) {
-            const record = response["login_records"][i];
-            text += `${record["username"]},${record["full_name"]},${record["ip"]},${record["login_time"]}<br>`;
-          }
-          $("#display_login_logout_records").append(text);
+          $box.append($("<strong>").text("登入紀錄："));
+          loginRecords.forEach(function (r) {
+            $box.append($("<div>").text(
+              [r["username"], r["full_name"], r["ip"], r["login_time"]].join(",")
+            ));
+          });
         }
-        
-        if (response["logout_records"] && response["logout_records"].length > 0) {
-          let text2 = "<br><strong>登出紀錄：</strong><br>";
-          for (let i = 0; i < response["logout_records"].length; i++) {
-            const record = response["logout_records"][i];
-            text2 += `${record["username"]},${record["full_name"]},${record["ip"]},${record["logout_time"]}<br>`;
-          }
-          $("#display_login_logout_records").append(text2);
+
+        if (logoutRecords.length > 0) {
+          $box.append($("<br>"), $("<strong>").text("登出紀錄："));
+          logoutRecords.forEach(function (r) {
+            $box.append($("<div>").text(
+              [r["username"], r["full_name"], r["ip"], r["logout_time"]].join(",")
+            ));
+          });
         }
       },
       error: function (error) {
@@ -492,7 +850,7 @@ $(".form-check-input").on("change", function () {
 
   // 查詢未到學生（尚未登入的學生）
   $("#btn_query_no_login_users").on("click", function () {
-    let queryClass = $("#queryClass").val().trim();
+    let queryClass = $("#queryClass").val();
     let queryTime = $("#queryTime").val().trim();
     
     // 檢查輸入的時間格式是否正確
@@ -510,41 +868,35 @@ $(".form-check-input").on("change", function () {
         csrfmiddlewaretoken: "{{ csrf_token }}",
       },
       success: function (response) {
-        
-        $("#display_no_login_users").empty();
-        
-        if (response["no_login_users"].length === 0) {
-          $("#display_no_login_users").append("<span style='color: green;'>🎉 所有學生都已登入！</span>");
+        // 資料一律用 .text() 塞入，避免姓名等欄位含 HTML 時造成 XSS
+        const $box = $("#display_no_login_users").empty();
+        const users = response["no_login_users"];
+
+        $box.append($("<strong>").text("查詢條件："), $("<br>"));
+        $box.append(document.createTextNode(
+          "班級: " + (queryClass || "全部") + " | 時間點: " +
+          (queryTime || "未指定 (默認當下時間之前三個小時)")
+        ), $("<br>"));
+
+        if (users.length === 0) {
+          $box.append($("<span style='color: green;'>").text("🎉 所有學生都已登入！"));
         } else {
-          let text = "";
-          text += `<strong>查詢條件：</strong><br>`;
-          if (queryClass) {
-            text += `班級: ${queryClass} | `;
-          } else {
-            text += `班級: 全部 | `;
-          }
-          if (queryTime) {
-            text += `時間點: ${queryTime}<br>`;
-          } else {
-            text += `時間點: 未指定 (默認當下時間之前三個小時)<br>`;
-          }
-          text += `<strong>未到學生總數: ${response["no_login_users"].length} 人</strong><br><br>`;
-          
-          text += "<table class='table table-sm table-striped'>";
-          text += "<thead><tr><th>學號</th><th>姓名</th><th>班級</th><th>最後登入時間</th></tr></thead><tbody>";
-          
-          for (let i = 0; i < response["no_login_users"].length; i++) {
-            const user = response["no_login_users"][i];
-            text += `<tr>`;
-            text += `<td>${user["username"]}</td>`;
-            text += `<td>${user["full_name"]}</td>`;
-            text += `<td>${user["user_class"]}</td>`;
-            text += `<td>${user["last_login_time"] || "未登入"}</td>`;
-            text += `</tr>`;
-          }
-          
-          text += "</tbody></table>";
-          $("#display_no_login_users").append(text);
+          $box.append($("<strong>").text("未到學生總數: " + users.length + " 人"), $("<br>"), $("<br>"));
+          const $tbody = $("<tbody>");
+          users.forEach(function (user) {
+            $tbody.append(
+              $("<tr>")
+                .append($("<td>").text(user["username"]))
+                .append($("<td>").text(user["full_name"] || ""))
+                .append($("<td>").text(user["user_class"] || ""))
+                .append($("<td>").text(user["last_login_time"] || "未登入"))
+            );
+          });
+          $box.append(
+            $("<table class='table table-sm table-striped'>")
+              .append("<thead><tr><th>學號</th><th>姓名</th><th>班級</th><th>最後登入時間</th></tr></thead>")
+              .append($tbody)
+          );
         }
         
         // 顯示登入登出紀錄

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import LoggedInUser, IPRegectedUser, SessionWarningUser, LoginHistory, LogoutHistory
+from .models import ExamIPBinding, ExamBindingRejection
 from django.contrib.auth.admin import UserAdmin
 from .models import User
 from import_export.admin import ImportExportModelAdmin
@@ -8,6 +9,8 @@ from import_export import resources
 admin.site.register(LoggedInUser)
 admin.site.register(IPRegectedUser)
 admin.site.register(SessionWarningUser)
+admin.site.register(ExamIPBinding)
+admin.site.register(ExamBindingRejection)
 
 
 @admin.register(LoginHistory)

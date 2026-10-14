@@ -86,6 +86,9 @@ urlpatterns = [
         views.get_login_logout_records,
         name="get_login_logout_records",
     ),
+    path("get_exam_ip_bindings/", views.get_exam_ip_bindings, name="get_exam_ip_bindings"),
+    path("reset_exam_ip_binding/", views.reset_exam_ip_binding, name="reset_exam_ip_binding"),
+    path("clear_exam_ip_bindings/", views.clear_exam_ip_bindings, name="clear_exam_ip_bindings"),
     path(
         "delete_user_sessions/", views.delete_user_sessions, name="delete_user_sessions"
     ),

@@ -124,6 +124,42 @@ class LogoutHistory(models.Model):
         return f"{self.user.username} - {self.ip} - {logout_time}"
 
 
+class ExamIPBinding(models.Model):
+    """
+    上機考試 IP 綁定: 考試模式開啟時，考生第一次登入(或第一次存取)的電腦 IP 會被綁定。
+    一個帳號只能綁一個 IP，一個 IP 也只能綁一個帳號 (兩個欄位都 unique)。
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="exam_ip_binding")
+    ip = models.CharField(max_length=50, unique=True, help_text="綁定的電腦IP")
+    user_agent = models.TextField(null=True, blank=True, help_text="綁定時的瀏覽器資訊")
+    bound_at = models.DateTimeField(auto_now_add=True, help_text="綁定時間")
+
+    class Meta:
+        ordering = ["ip"]
+        verbose_name = "考試IP綁定"
+        verbose_name_plural = "考試IP綁定"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ip}"
+
+
+class ExamBindingRejection(models.Model):
+    """考試模式下因 IP 綁定不符而被拒絕的登入/存取紀錄"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_binding_rejections")
+    ip = models.CharField(max_length=50, null=True, blank=True)
+    reason = models.TextField(help_text="被拒絕原因")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "考試IP綁定拒絕紀錄"
+        verbose_name_plural = "考試IP綁定拒絕紀錄"
+
+    def __str__(self):
+        created_at = timezone.localtime(self.created_at).strftime("%Y-%m-%d %H:%M:%S")
+        return f"{self.user.username},{self.ip},{created_at}"
+
+
 """
 from django.contrib.sessions.models import Session
 class UserSession(models.Model):

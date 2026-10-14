@@ -46,5 +46,13 @@
         "option_name": "allow_user_register",
         "option_value": "False"
       }
+    },
+    {
+      "model": "app_management.MySysOptions",
+      "pk": 7,
+      "fields": {
+        "option_name": "exam_ip_binding",
+        "option_value": "False"
+      }
     }
 ]

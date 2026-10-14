@@ -12,6 +12,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from app_management.models import MySysOptions
 from app_account.models import IPRegectedUser, SessionWarningUser, LoginHistory, LogoutHistory
+from app_account.exam_binding import exam_binding_enabled, check_and_bind
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
@@ -124,6 +125,18 @@ def user_login(request):
             # msg = user.username+ ','+ str(current_ip)+"你的IP不允許參加這次的考試!"
             messages.error(request, "IP管制中,不允許此IP登入!")
             context = {"error": "IP restricted", "username": raw_username}
+            return render(
+                request,
+                "app_account/registration/user_login.html",
+                {"context": context},
+            )
+
+    # 上機考試 IP 綁定 (考試模式): 一帳號一IP、一IP一帳號
+    if exam_binding_enabled() and not user.is_staff:
+        ok, reason = check_and_bind(user, current_ip, request.META.get("HTTP_USER_AGENT", ""))
+        if not ok:
+            messages.error(request, reason)
+            context = {"error": "Exam IP binding", "username": raw_username}
             return render(
                 request,
                 "app_account/registration/user_login.html",

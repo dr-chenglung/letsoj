@@ -7,6 +7,13 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from app_account.models import IPRegectedUser, SessionWarningUser, LoginHistory, LoggedInUser, LogoutHistory
+from app_account.models import ExamIPBinding, ExamBindingRejection
+from app_account.exam_binding import (
+    clear_student_sessions,
+    exam_binding_enabled,
+    get_client_ip,
+    is_internal_ip,
+)
 from app_management.models import (
     Language,
     ProblemCategory,
@@ -1043,6 +1050,68 @@ def get_login_logout_records(request):
 
 
 @staff_member_required
+def get_exam_ip_bindings(request):
+    """取得考試 IP 綁定名單與被拒紀錄，並回傳伺服器看到的管理者自己的 IP(用來檢查是否拿得到真實 IP)"""
+    bindings = []
+    for row in ExamIPBinding.objects.select_related("user").order_by("ip"):
+        bindings.append({
+            "username": row.user.username,
+            "full_name": row.user.full_name,
+            "ip": row.ip,
+            "bound_at": row.bound_at.astimezone(curr_timezone).strftime("%Y/%m/%d %H:%M:%S"),
+        })
+
+    rejections = []
+    for row in ExamBindingRejection.objects.select_related("user").order_by("-created_at"):
+        rejections.append({
+            "username": row.user.username,
+            "full_name": row.user.full_name,
+            "ip": row.ip,
+            "reason": row.reason,
+            "created_at": row.created_at.astimezone(curr_timezone).strftime("%Y/%m/%d %H:%M:%S"),
+        })
+
+    return JsonResponse({
+        "your_ip": get_client_ip(request),
+        "your_ip_is_internal": is_internal_ip(get_client_ip(request)),
+        "bindings": bindings,
+        "rejections": rejections,
+    })
+
+
+@staff_member_required
+@require_POST
+def reset_exam_ip_binding(request):
+    """
+    解除單一考生的 IP 綁定(換電腦、電腦故障時使用)，並登出該考生，
+    考生到新電腦重新登入時會綁定新的電腦
+    """
+    username = request.POST.get("username", "").strip()
+    binding = ExamIPBinding.objects.filter(user__username=username).first()
+    if binding is None:
+        return JsonResponse({"success": False, "message": f"{username} 沒有綁定紀錄"})
+    user_id = binding.user_id
+    binding.delete()
+    clear_student_sessions([user_id])
+    logger.info(f"解除考試IP綁定: {username}")
+    return JsonResponse({"success": True, "message": f"已解除 {username} 的綁定並將他登出"})
+
+
+@staff_member_required
+@require_POST
+def clear_exam_ip_bindings(request):
+    """
+    清除所有考試 IP 綁定與被拒紀錄(新考試開始前使用)，並登出所有考生，
+    避免舊綁定留下的登入狀態繞過新的綁定
+    """
+    ExamIPBinding.objects.all().delete()
+    ExamBindingRejection.objects.all().delete()
+    clear_student_sessions()
+    logger.info("已清除所有考試IP綁定與被拒紀錄")
+    return JsonResponse({"success": True, "message": "已清除所有綁定與被拒紀錄，並登出所有考生"})
+
+
+@staff_member_required
 @require_POST
 def delete_user_sessions(request):
     """
@@ -1164,7 +1233,20 @@ def get_no_login_users(request):
 
 @staff_member_required
 def manage_contest(request):
-    return render(request, "app_management/manage_oj_settings.html")
+    # 「查詢未登入的學生」的班級下拉選單: 所有學生(非管理員)出現過的班級
+    class_list = (
+        User.objects.filter(is_staff=False)
+        .exclude(user_class__isnull=True)
+        .exclude(user_class="")
+        .values_list("user_class", flat=True)
+        .distinct()
+        .order_by("user_class")
+    )
+    return render(
+        request,
+        "app_management/manage_oj_settings.html",
+        {"class_list": class_list},
+    )
 
 
 @staff_member_required
@@ -1474,16 +1556,26 @@ class WebsiteConfigAPI(APIView):
             "forbid_password_change",
             "allow_user_register",
             "hide_submitted_code",
+            "exam_ip_binding",
         ]
 
+        exam_was_on = exam_binding_enabled()
+
         for option_name in option_names:
-            op = MySysOptions.objects.get(option_name=option_name)
+            # 舊資料庫可能還沒有後來新增的選項(如 exam_ip_binding)，不存在時自動建立
+            op, _ = MySysOptions.objects.get_or_create(option_name=option_name)
             option_value = request.POST.get(option_name)
+            if option_value is None:
+                continue
             if option_name == "allowed_ip_ranges":
                 # ipranges = [{'ip':ip} for ip in request.POST.get('ipranges').split(";")]
                 option_value = [ip.strip() for ip in option_value.split(",") if ip]
             op.option_value = option_value
             op.save()
+
+        # 考試模式從關閉變成打開: 清掉所有學生的登入狀態，逼他們重新登入並綁定
+        if not exam_was_on and exam_binding_enabled():
+            clear_student_sessions()
         return Response("success")
 
 
