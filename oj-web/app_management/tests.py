@@ -1,11 +1,16 @@
+import io
+import json
 from datetime import timedelta
 
+import openpyxl
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.utils import timezone
 
 from app_account.models import LoginHistory, User
-from app_management.models import Contest, Problem
-from app_oj.models import Submission
+from app_management.models import Contest, Language, Problem
+from app_oj.models import ContestRank, Submission
+
 
 class NoLoginUsersClassFilterTests(TestCase):
     def setUp(self):
@@ -137,4 +142,67 @@ class RecentContestDropdownTests(TestCase):
         first_option = html.split('id="queryContest"', 1)[1].split("</option>", 1)[0]
         self.assertIn(f'value="{self.underway.pk}"', first_option)
         self.assertIn("【進行中】進行中", first_option)
+
+
+class ImportResetsPkSequenceTests(TestCase):
+    """
+    匯入功能會沿用來源的編號寫入資料庫，PostgreSQL 的序號不會跟著前進。
+    匯入後必須把序號重設到最大編號，否則之後在網頁上新增會撞號(duplicate key)。
+    每個測試都先探出「序號下一個會給的編號」，再以這個編號匯入，最後確認一般新增仍能成功。
+    """
+
+    def setUp(self):
+        self.teacher = User.objects.create_user("teacher", password="pw", is_staff=True)
+        self.student = User.objects.create_user("s1", password="pw")
+        self.java = Language.objects.create(name="Java", judge_id=62)
+        self.client = Client()
+        self.client.login(username="teacher", password="pw")
+
+    @staticmethod
+    def _next_id(model, **fields):
+        probe = model.objects.create(**fields)
+        next_id = probe.pk + 1
+        probe.delete()
+        return next_id
+
+    def test_excel_problem_import_then_create_problem(self):
+        new_id = self._next_id(Problem, title="probe")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["id", "title", "description", "std_input", "std_output", "template", "sample_code", "language", "categories"])
+        ws.append([new_id, "匯入的題目", "d", "1", "1", "", "", "Java", "數學運算"])
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        buf.name = "problems.xlsx"
+        self.client.post("/manage/import_problems_from_excel/", {"excel_file": buf})
+        self.assertTrue(Problem.objects.filter(pk=new_id, title="匯入的題目").exists())
+
+        created = Problem.objects.create(title="匯入後在網頁新增")
+        self.assertGreater(created.pk, new_id)
+
+    def test_contest_import_then_create_contest_and_problem(self):
+        new_problem_id = self._next_id(Problem, title="probe")
+        new_contest_id = self._next_id(Contest, title="probe")
+        files = {
+            "contest_metadata_file": json.dumps({
+                "id": new_contest_id, "title": "匯入的競賽", "description": "",
+                "start_time": None, "end_time": None, "is_public": False,
+                "is_weighted_ranking": False, "display_seq": "115-1-w06",
+                "solution_release_policy": "NEVER",
+            }),
+            "problems_file": json.dumps([{
+                "id": new_problem_id, "title": "匯入的題目", "description": "d",
+                "std_input": "1", "std_output": "1", "sample_code": "", "template": "",
+                "language": "Java", "categories": ["數學運算"],
+            }]),
+            "contest_problems_file": json.dumps([{"problem_id": new_problem_id, "id_prblm_in_contest": "q1"}]),
+        }
+        upload = {k: SimpleUploadedFile(f"{k}.json", v.encode("utf-8")) for k, v in files.items()}
+        self.client.post("/manage/import_contest_and_problems/", upload)
+        self.assertTrue(Contest.objects.filter(pk=new_contest_id).exists())
+        self.assertTrue(Problem.objects.filter(pk=new_problem_id).exists())
+
+        self.assertGreater(Problem.objects.create(title="新增題目").pk, new_problem_id)
+        self.assertGreater(Contest.objects.create(title="新增競賽").pk, new_contest_id)
 

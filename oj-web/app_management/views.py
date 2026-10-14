@@ -1641,6 +1641,34 @@ class WebsiteConfigAPI(APIView):
         return Response("success")
 
 
+def resets_pk_sequences(*models):
+    """
+    匯入功能會沿用來源資料的 id 直接寫入 (update_or_create(id=...))，PostgreSQL 的序號不會跟著前進，
+    之後在網頁上新增就會拿到已被使用的編號而失敗 (duplicate key)。
+    這個 decorator 在 view 結束後 (不論成功或失敗) 把指定 models 的序號重設到目前最大的 id，
+    效果等同 `manage.py sqlsequencereset`。
+    """
+    from functools import wraps
+
+    from django.core.management.color import no_style
+    from django.db import connection
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            try:
+                return view_func(request, *args, **kwargs)
+            finally:
+                if request.method == "POST":
+                    with connection.cursor() as cursor:
+                        for sql in connection.ops.sequence_reset_sql(no_style(), models):
+                            cursor.execute(sql)
+
+        return wrapper
+
+    return decorator
+
+
 @staff_member_required
 def import_users_from_excel(request):
     if request.method == "POST":
@@ -2262,6 +2290,7 @@ def export_problems_to_excel(request):
 
 
 @staff_member_required
+@resets_pk_sequences(Problem, ProblemCategory)
 def import_problems_from_excel(request):
     if request.method == "POST":
         # Define the fields to be imported
@@ -2622,6 +2651,7 @@ def export_submissions(request):
 
 
 @staff_member_required
+@resets_pk_sequences(Submission, ContestRank)
 def import_submissions(request):
     """
     從 JSON 檔案匯入競賽提交記錄和排名資料
@@ -2947,6 +2977,7 @@ def export_contest_and_problems(request):
 
 
 @staff_member_required
+@resets_pk_sequences(Contest, Problem, ProblemCategory, ContestProblem)
 def import_contest_and_problems(request):
     """
     從 JSON 檔案匯入競賽資料，包含競賽資訊和相關題目
