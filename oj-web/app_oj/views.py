@@ -47,6 +47,8 @@ def learning_map(request):
     return render(request, "app_oj/learning_map.html")
 
 
+# 競賽列表必須登入才能看，避免外部爬蟲從這裡收集競賽名稱與連結
+@login_required(login_url="user_login")
 def contest_list(request):
 
     contests = Contest.objects.filter(is_public=True)
