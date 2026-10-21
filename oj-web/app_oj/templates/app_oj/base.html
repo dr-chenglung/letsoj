@@ -114,9 +114,11 @@
       {% if messages %}
         {% for message in messages %}
           {% if 'error' in message.tags %}
-            <p class="alert alert-danger bg-light text-danger" role="alert">
+            <!-- 錯誤訊息不自動消失，要按叉叉才關閉 -->
+            <div class="alert alert-danger alert-dismissible alert-persist bg-light text-danger" role="alert">
               <span style="font-weight:bold">{{ message }}</span>
-            </p>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
           {% elif 'success' in message.tags %}
             <p class="alert alert-success bg-light text-success" role="alert">
               <span style="font-weight:bold">{{ message }}</span>
@@ -138,9 +140,9 @@
 </html>
 {% block script_block %}
   <script>
-  //close alert after 3 seconds
+  //close alert after 2 seconds (錯誤訊息 .alert-persist 除外)
   window.setTimeout(function() {
-    $(".alert").fadeTo(300, 0).slideUp(300, function(){
+    $(".alert").not(".alert-persist").fadeTo(300, 0).slideUp(300, function(){
       $(this).remove();
     });
   }, 2000);

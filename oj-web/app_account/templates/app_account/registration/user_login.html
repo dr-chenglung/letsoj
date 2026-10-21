@@ -27,9 +27,11 @@
                   <span style="font-weight:bold">{{ message }}</span>
                 </p>
               {% else %}
-                <p class="alert alert-info bg-light text-danger" role="alert">
+                <!-- 錯誤訊息不自動消失，要按叉叉才關閉 -->
+                <div class="alert alert-info alert-dismissible alert-persist bg-light text-danger" role="alert">
                   <span style="font-weight:bold">{{ message }}</span>
-                </p>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
               {% endif %}
             {% endfor %}
           {% endif %}
@@ -76,9 +78,9 @@
     $('#modalForm').modal('toggle');
  });
  
-  //close alert after 5 seconds
+  //close alert after 2 seconds (錯誤訊息 .alert-persist 除外)
   window.setTimeout(function() {
-    $(".alert").fadeTo(500, 0).slideUp(500, function(){
+    $(".alert").not(".alert-persist").fadeTo(500, 0).slideUp(500, function(){
       $(this).remove();
     });
   }, 2000);
