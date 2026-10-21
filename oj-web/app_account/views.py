@@ -105,6 +105,7 @@ def user_login(request):
     if forbid_login_ip and not user.is_staff:
         if not allowed_ip_ranges:
             # if '' in allowed_ip_ranges:
+            logger.warning(f"暫停登入(IP管制中但未設定允許IP):{raw_username},{current_ip}")
             messages.error(request, "目前暫停登入!")
             context = {"error": "Login suspended", "username": raw_username}
             return render(
@@ -121,6 +122,7 @@ def user_login(request):
             # if not any(ipaddress.IPv4Address(current_ip) in ipaddress.IPv4Network(ip) for ip in allowed_ip_ranges):
             # save IP rejected user
             IPRegectedUser.objects.create(user=user, ip=current_ip)
+            logger.warning(f"IP管制拒絕:{raw_username},{current_ip},允許範圍={allowed_ip_ranges}")
             # iprejecteduser, sucess = IPRegectedUser.objects.update_or_create(user=user, ip=current_ip)
             # msg = user.username+ ','+ str(current_ip)+"你的IP不允許參加這次的考試!"
             messages.error(request, "IP管制中,不允許此IP登入!")
