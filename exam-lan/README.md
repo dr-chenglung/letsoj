@@ -28,7 +28,9 @@ Django 因此看不到學生電腦的真實 IP，「IP 限制」與「一 IP 一
 
 1. **下載 nginx for Windows**：到 <https://nginx.org/en/download.html> 下載 Stable 版 zip，
    解壓到例如 `C:\nginx`。
-2. **覆蓋設定檔**：把 `exam-lan/windows-nginx/conf/nginx.conf` 複製到 `C:\nginx\conf\nginx.conf`。
+2. **覆蓋設定檔**：只把 `exam-lan/windows-nginx/conf/nginx.conf` 這一個檔案複製到 `C:\nginx\conf\nginx.conf`，
+   不要用整個 `conf` 資料夾去取代 `C:\nginx\conf` (裡面原本的其他檔案保留即可)。
+   改完後在 `C:\nginx` 執行 `.\nginx.exe -t` 確認出現 `syntax is ok`。
 3. **伺服器設定固定 IP**：在 Windows 網路設定把 OJ 伺服器設為固定 IP (例如 `192.168.0.10`)，
    或在 Router 設定 DHCP 保留。
 4. **加入允許的 Host**：在 `.env` 的 `DJANGO_ALLOWED_HOSTS` **追加**伺服器的區網 IP
