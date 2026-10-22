@@ -1,0 +1,60 @@
+====================================================================
+ 區域網路上機考試  指令速查
+====================================================================
+OJ 網址：http://192.168.50.163/
+所有指令都在 PowerShell 執行。
+
+注意：.env 的 DJANGO_ALLOWED_HOSTS 最後面要有 192.168.50.163
+      (只追加，原有的不要刪)，否則網頁會出現 400 Bad Request。
+
+
+[0] 下載 letsoj
+    git clone https://github.com/dr-chenglung/letsoj.git
+    cd letsoj
+    
+
+
+[1] 解壓 nginx 到 C 槽根目錄
+    到 https://nginx.org/en/download.html 下載 Stable version 的 zip，
+    解壓後資料夾改名為 C:\nginx
+    (C:\nginx 底下要直接看到 nginx.exe、conf、logs、temp)
+
+
+[2] 用我們的 conf 檔取代 nginx 的設定檔
+    Copy-Item "C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\exam-lan\windows-nginx\conf\nginx.conf" "C:\nginx\conf\nginx.conf" -Force
+
+    檢查 (看到 syntax is ok 就對了)：
+        cd C:\nginx
+        .\nginx.exe -t
+
+
+[3] 啟動 / 停止 nginx (都要先 cd C:\nginx)
+    啟動：
+        cd C:\nginx
+        start nginx
+    第一次啟動會跳出 Windows 防火牆視窗，勾「私人網路」後按「允許」。
+
+    停止：
+        cd C:\nginx
+        .\nginx.exe -s quit
+    停不掉時強制結束：
+        taskkill /F /IM nginx.exe
+
+
+[4] 啟動 OJ 的 Docker Compose (考試模式)
+    cd C:\Users\clhuang\Documents\shared_on_google_drive\letsoj
+    
+    docker compose -f docker-compose.yaml -f docker-compose.exam.yaml up -d
+
+    啟動後開瀏覽器進入：
+        http://192.168.50.163/
+
+
+[5] 匯入資料庫 dump 檔
+    把 dump 檔放到 C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\oj-postgres-dump-backup\pg_backup_00.dump
+    (檔名不同就改 postgres-restore.ps1 裡的 $dumpFileName)
+
+    cd C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\oj-db-dump-on-windows
+    .\postgres-restore.ps1
+
+    匯入完成後重新進入 http://192.168.50.163/ ，就能看到網頁正常運作。
