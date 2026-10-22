@@ -11,7 +11,7 @@
   - 自動產生時間戳檔名
 
 ### 🔧 還原相關  
-- **`postgres-restore.ps1`** - 還原 PostgreSQL 資料庫
+- **`restore-postgres.ps1`** - 還原 PostgreSQL 資料庫
   - 列出可用的備份檔案
   - 選擇要還原的備份
   - 確認後執行還原操作
@@ -41,7 +41,7 @@ cd C:\Users\user\Documents\letsoj\oj-db-dump-on-windows
 .\setup-backup-schedule.ps1
 
 # 還原資料庫
-.\postgres-restore.ps1
+.\restore-postgres.ps1
 
 # 清理舊備份
 .\cleanup-old-backups.ps1
@@ -53,7 +53,7 @@ cd C:\Users\user\Documents\letsoj\oj-db-dump-on-windows
 letsoj/
 ├── oj-db-dump-on-windows/      # PowerShell 管理腳本
 │   ├── postgres-backup.ps1     # 資料庫備份
-│   ├── postgres-restore.ps1    # 資料庫還原  
+│   ├── restore-postgres.ps1    # 資料庫還原  
 │   ├── cleanup-old-backups.ps1 # 清理舊備份
 │   └── setup-backup-schedule.ps1 # 設定排程
 ├── oj-postgres-dump-backup/    # 備份檔案存放位置
