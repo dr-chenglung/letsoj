@@ -21,7 +21,7 @@ OJ 網址：http://192.168.50.163/
 
 
 [2] 用我們的 conf 檔取代 nginx 的設定檔
-    Copy-Item "C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\exam-lan\windows-nginx\conf\nginx.conf" "C:\nginx\conf\nginx.conf" -Force
+   letsoj\exam-lan\windows-nginx\conf\nginx.conf 複製到 C:\nginx\conf\nginx.conf
 
     檢查 (看到 syntax is ok 就對了)：
         cd C:\nginx
@@ -42,7 +42,7 @@ OJ 網址：http://192.168.50.163/
 
 
 [4] 啟動 OJ 的 Docker Compose (考試模式)
-    cd C:\Users\clhuang\Documents\shared_on_google_drive\letsoj
+    cd letsoj
     
     docker compose -f docker-compose.yaml -f docker-compose.exam.yaml up -d
 
