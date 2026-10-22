@@ -67,11 +67,11 @@ OJ 網址：http://192.168.50.163/
 
     再以一般模式重啟容器 (不用先刪容器，Compose 會自動重建 oj-nginx)：
         cd letsoj
-        docker compose -f docker-compose.yaml up -d
+        docker compose up -d
 
     確認 (看到 80/tcp -> 0.0.0.0:80 就對了)：
         docker port oj-nginx
     若還是 127.0.0.1:8080，強制重建：
-        docker compose -f docker-compose.yaml up -d --force-recreate oj-nginx
+        docker compose up -d --force-recreate oj-nginx
 
     注意：千萬不要用 docker compose down -v，-v 會刪掉 volume，資料庫會被清空。
