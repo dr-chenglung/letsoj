@@ -25,7 +25,7 @@ Judge0建議安裝於Ubuntu20.04，若安裝於Ubuntu22.04，必須修改其grou
 ```
 git clone https://github.com/dr-chenglung/letsoj.git  
 cd letsoj  
-docker compose up
+docker compose up -d
 ```
 或是多個判題容器
 ```
