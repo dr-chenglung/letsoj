@@ -51,10 +51,10 @@ OJ 網址：http://192.168.50.163/
 
 
 [5] 匯入資料庫 dump 檔
-    把 dump 檔放到 C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\oj-postgres-dump-backup\pg_backup_00.dump
+    把 dump 檔放到 letsoj\oj-postgres-dump-backup\pg_backup_00.dump
     (檔名不同就改 postgres-restore.ps1 裡的 $dumpFileName)
 
-    cd C:\Users\clhuang\Documents\shared_on_google_drive\letsoj\oj-db-dump-on-windows
+    cd letsoj\oj-db-dump-on-windows
     .\postgres-restore.ps1
 
     匯入完成後重新進入 http://192.168.50.163/ ，就能看到網頁正常運作。
