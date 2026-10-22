@@ -95,7 +95,7 @@ cd C:\nginx
 .\nginx.exe -s quit
 
 # 2. 以一般模式重啟容器 (恢復 80/443)
-docker compose -f docker-compose.yaml up -d
+docker compose up -d
 ```
 
 ## 常見問題
