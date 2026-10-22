@@ -58,3 +58,20 @@ OJ 網址：http://192.168.50.163/
     .\restore-postgres.ps1
 
     匯入完成後重新進入 http://192.168.50.163/ ，就能看到網頁正常運作。
+
+
+[6] 考試結束：回到一般模式
+    先關 Windows 本機 nginx (它占著 port 80，不先關容器會搶不到 80)：
+        cd C:\nginx
+        .\nginx.exe -s quit
+
+    再以一般模式重啟容器 (不用先刪容器，Compose 會自動重建 oj-nginx)：
+        cd letsoj
+        docker compose -f docker-compose.yaml up -d
+
+    確認 (看到 80/tcp -> 0.0.0.0:80 就對了)：
+        docker port oj-nginx
+    若還是 127.0.0.1:8080，強制重建：
+        docker compose -f docker-compose.yaml up -d --force-recreate oj-nginx
+
+    注意：千萬不要用 docker compose down -v，-v 會刪掉 volume，資料庫會被清空。
