@@ -32,7 +32,14 @@ OJ 網址：http://192.168.50.163/
     啟動：
         cd C:\nginx
         start nginx
-    第一次啟動會跳出 Windows 防火牆視窗，勾「私人網路」後按「允許」。
+    第一次啟動會跳出 Windows 防火牆視窗，不要改勾選，直接按「允許」；要保險就兩個都勾。
+    (視窗預設會勾好網卡目前的類型，考場常是「公用網路」；改成只勾私人網路，學生會連不進來)
+
+    學生連不進來時，檢查網卡類型與 nginx 防火牆規則 (規則的 Profile 要包含網卡的類型)：
+        Get-NetConnectionProfile
+        Get-NetFirewallRule -DisplayName "*nginx*" | Format-Table DisplayName,Action,Profile,Enabled
+    補救 (系統管理員 PowerShell)，讓 nginx 在所有網路類型都放行：
+        Get-NetFirewallRule -DisplayName "*nginx*" | Set-NetFirewallRule -Action Allow -Profile Any
 
     停止：
         cd C:\nginx
