@@ -18,7 +18,7 @@ x-logging:
       max-size: 1m
 services:
   server: # 容器名稱server，提交程式時會用到:'http://server:2358/submissions/'
-    image: judge0/judge0:latest
+    image: judge0/judge0:1.13.1  # 固定版本，與 judge0-v1.13.1/judge0.conf 對應；勿用 latest
     volumes:
       - ./judge0-v1.13.1/judge0.conf:/judge0.conf:ro
       # 放在當下目錄，必需能讓容器讀取，否則無法啟動
@@ -33,7 +33,7 @@ services:
     restart: always
 
   workers:
-    image: judge0/judge0:latest
+    image: judge0/judge0:1.13.1  # 固定版本，與 judge0-v1.13.1/judge0.conf 對應；勿用 latest
     command: ["./scripts/workers"]
     volumes:
       - ./judge0-v1.13.1/judge0.conf:/judge0.conf:ro
