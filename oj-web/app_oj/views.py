@@ -249,9 +249,14 @@ judge0_payload = {
 
 # For http version
 judger_url = "http://server:2358/submissions/"  # judge0 server
+# 取結果時只要這些欄位，不取 stdout：判題比對由 judge0 完成，Django 用不到 stdout，
+# 且無窮迴圈的輸出可達數十 MB，整包抓回會吃記憶體、撐爆 log
+judge_result_fields = "token,status,time,memory,stderr,compile_output,message"
+# 一般題目的輸出(stdout)與寫檔上限(KB)；資料庫題型不帶此參數，沿用 judge0.conf 的 MAX_FILE_SIZE
+general_max_file_size = 1024
 
 
-def judge(sourceCode, stdin, expected_output, language_id, additional_files=None):
+def judge(sourceCode, stdin, expected_output, language_id, additional_files=None, max_file_size=None):
 
     # Judger need to receive the following data
     judge0_payload = {
@@ -268,6 +273,10 @@ def judge(sourceCode, stdin, expected_output, language_id, additional_files=None
         judge0_payload["additional_files"] = additional_files
         # 不使用 compiler_options 與 command_line_arguments，因為直接將 zip 解壓縮至當前目錄 `.` 即可讓 Java 自動載入 .class 檔案
 
+    # 限制單一檔案(含 stdout)大小，避免無窮迴圈大量輸出
+    if max_file_size:
+        judge0_payload["max_file_size"] = max_file_size
+
     
     # 將 test_cases 轉換為 JSON
     # judge0_payload = json.dumps(judge0_payload)
@@ -277,7 +286,8 @@ def judge(sourceCode, stdin, expected_output, language_id, additional_files=None
     # 送給Judger執行 若發生例外，會被捕捉到
     try:
         response_post = requests.request(
-            "POST", judger_url + "?base64_encoded=true", json=judge0_payload
+            "POST", judger_url + "?base64_encoded=true", json=judge0_payload,
+            timeout=10,
         )
         logger.debug(f"Judge0 response status: {response_post.status_code}")
         logger.debug(f"Judge0 response body: {response_post.text}")
@@ -476,7 +486,9 @@ def submit_to_judger(request):
             test_case["stdin"],
             test_case["expected_output"],
             problem.language.judge_id,
-            encoded_additional_files # <--- 動態帶入附加檔案:資料庫驅動程式
+            encoded_additional_files, # <--- 動態帶入附加檔案:資料庫驅動程式
+            # 資料庫題型執行時會寫出 sqlite 原生函式庫(約 1MB)與資料庫檔，維持 judge0.conf 的較大上限
+            max_file_size=None if is_database_problem else general_max_file_size,
         )
         judge_response_info["task_token"] = str(task_token)
         # 綁定本次提交的 judge token,並把狀態重設為 IN_QUEUE(表示本次提交尚未取得最終結果)。
@@ -513,9 +525,14 @@ def get_submission_result(request):
     judge_response_info = {}
     try:
         judge_result = requests.get(
-            f"{judger_url}/{task_token}?base64_encoded=true"
+            f"{judger_url}/{task_token}?base64_encoded=true&fields={judge_result_fields}",
+            timeout=10,
         ).json()
-        logger.info(f"取得提交結果:{judge_result}")
+        logger.info(
+            f"取得提交結果: token={task_token} "
+            f"status={judge_result.get('status', {}).get('description')} "
+            f"time={judge_result.get('time')} memory={judge_result.get('memory')}"
+        )
         if judge_result.get("stderr"):
             try:
                 stderr_decoded = base64.b64decode(judge_result["stderr"]).decode(

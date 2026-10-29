@@ -54,7 +54,7 @@ from django.db.models import Q
 
 import markdown
 from app_oj.views import parse_problem_template
-from app_oj.views import judge, judger_url
+from app_oj.views import judge, judger_url, judge_result_fields
 from app_oj.views import stringToBase64, base64ToString
 
 import requests
@@ -1879,7 +1879,8 @@ def get_manager_submission_result(request):
     judge_response_info = {}
     try:
         judge_result = requests.get(
-            f"{judger_url}/{task_token}?base64_encoded=true"
+            f"{judger_url}/{task_token}?base64_encoded=true&fields={judge_result_fields}",
+            timeout=10,
         ).json()
     except Exception as error:
         logger.error("取得Judger結果，發生例外了!")
@@ -1887,7 +1888,11 @@ def get_manager_submission_result(request):
         judge_response_info["result_status"] = "GetJudgerResultError"
         return JsonResponse(judge_response_info)
 
-    logger.info(judge_result)
+    logger.info(
+        f"取得提交結果: token={task_token} "
+        f"status={judge_result.get('status', {}).get('description')} "
+        f"time={judge_result.get('time')} memory={judge_result.get('memory')}"
+    )
 
     status = judge_result["status"]["id"]
 
