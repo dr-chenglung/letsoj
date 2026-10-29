@@ -36,3 +36,6 @@ Thumbs.db
 
 # 開發規劃文件(spec/plan)，保留在本機、不進版控
 docs/
+
+# Playwright MCP 瀏覽器測試工具的暫存檔(截圖、快照)
+.playwright-mcp/
