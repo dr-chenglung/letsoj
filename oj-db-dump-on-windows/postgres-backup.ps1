@@ -65,3 +65,32 @@ if ((Get-Date).Minute -eq 0) {
     Copy-Item $dumpFilePath $hourlyDumpFilePath
     Write-Host "每小時備份完成: $hourlyDumpFilePath"
 }
+
+# ==========================
+# Step 5: 每日備份（檔名含日期，保留最近 N 天）
+# ==========================
+$dailyKeepDays = 14    # 每日備份保留天數，例如 7、14、30
+
+# 只有在這次備份檔確實存在且不是空檔時才處理，避免把失敗的備份當成每日備份
+if ((Test-Path $dumpFilePath) -and ((Get-Item $dumpFilePath).Length -gt 0)) {
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $dailyDumpFilePath = Join-Path $backupDir "pg_backup_daily_$today.dump"
+
+    # 今天的每日備份還不存在才複製（每天只做一次）
+    if (-not (Test-Path $dailyDumpFilePath)) {
+        Copy-Item $dumpFilePath $dailyDumpFilePath
+        Write-Host "每日備份完成: $dailyDumpFilePath"
+
+        # 刪除超過保留天數的每日備份（依檔名中的日期判斷）
+        $cutoff = (Get-Date).Date.AddDays(-$dailyKeepDays)
+        Get-ChildItem $backupDir -Filter "pg_backup_daily_*.dump" | ForEach-Object {
+            if ($_.BaseName -match '^pg_backup_daily_(\d{4}-\d{2}-\d{2})$') {
+                $fileDate = [datetime]::ParseExact($Matches[1], 'yyyy-MM-dd', $null)
+                if ($fileDate -lt $cutoff) {
+                    Remove-Item $_.FullName
+                    Write-Host "已刪除過期的每日備份: $($_.Name)"
+                }
+            }
+        }
+    }
+}
